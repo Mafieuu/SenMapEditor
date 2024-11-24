@@ -1,0 +1,11 @@
+back_end/env/
+# Ignorer le contenu des dossiers data_in et data_out
+back_end/data_in/*
+back_end/data_out/*
+
+# Ne pas ignorer les dossiers eux-mêmes
+!back_end/data_in/
+!back_end/data_out/
+
+!back_end/data_in/readme.md
+# back_end/data_processing/user.json est suivi par git

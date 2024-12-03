@@ -17,4 +17,4 @@ def shapefile_to_geojson(chemin_shp, out_folder=r"../data_out"):
     output_file = f"{out_folder}/{name_shp.group(0)}.geojson"
     fil_converti.to_file(output_file, driver="GeoJSON")
 
-# shapefile_to_geojson(r"C:\Users\HP\Desktop\temp\HACKATON\Sen_Map_Editor\back_end\data_in\CENTROIDE_SANGALKAM.shp")
+shapefile_to_geojson(r"C:\Users\HP\Desktop\temp\HACKATON\Sen_Map_Editor\back_end\data_in\proj_SANGALKAM.shp")

@@ -11,6 +11,8 @@ Convertit un fichier Shapefile (.shp) en fichier GeoJSON (.geojson).
 - **`out_folder` (str)** : Dossier où enregistrer le fichier GeoJSON (par défaut `../daya_out`).
 
 ### Cas pratique
+#### Important
+Les shapesfiles doivent etre reprojete avec reprojection.py avant la conversion en geojson
 
 ```python
 from data_processing import shapefile_to_geojson
@@ -30,4 +32,19 @@ solution installer le pluggin QTiles de Qgis.
 Elle permet de decomposer mon .tuif en tuile selon le niveau de zoom
 https://makina-corpus.com/sig-cartographie/sig-mettre-en-place-des-tuiles-vectorielles
 https://blog.jawg.io/pourquoi-utiliser-des-tuiles-vectorielles-plutot-que-des-tuiles-raster-dans-vos-cartes-interactives/
+## Gestion des sources extrnes par flutter
+Pour demander a flutter de charger mon tuile dans ses asserts,flutter n'est pas assez intelligent pour trouver les fichiers.
+Il va falloir modifier le fichier pubspec.yaml et ajouter autant de ligne pour chaque dossier contenant directement les images.
+du coup ce travail sera delegue a python, le principe est que par defaut on charge un raster et un shapefil puis on prend les autres
+dans AWS, la il y aura plus de sossier asset.
+## abandon tuiles classiques au profil des MBtiles
+Le tuiles classiques generent des tas de dossiers et c'est galere a afficher.
+alternative :MBtiles (ideal pour base de donnee)
+doc : https://naturagis.fr/qgis/images-fichier-mbtiles-avec-qgis/
+**
+https://github.com/josxha/flutter_map_plugins/tree/main/flutter_map_mbtiles
+
+permet de lire les fichiers mbtiles dans flutter
+**
+
 

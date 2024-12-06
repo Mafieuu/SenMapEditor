@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geojsonmaj/main.dart';
 import 'package:latlong2/latlong.dart';
 
 // Définition de la classe PolygonData
@@ -133,43 +134,51 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
     });
   }
 
-  void _selectOrMovePoint(LatLng point) {
-    if (!_isMovePointMode || !mounted) return;
+void _selectOrMovePoint(LatLng point) {
+  if (!_isMovePointMode || !mounted) return;
 
-    const double minDistance = 0.0005; // Correction : const au lieu de final
-    int? closestIndex;
+  const double minDistance = 0.0005;
+  int? closestIndex;
 
-    for (int i = 0; i < _editablePoints.length; i++) {
-      double distance = _calculateDistance(_editablePoints[i], point);
-      if (distance < minDistance) {
-        closestIndex = i;
-        break;
+  for (int i = 0; i < _editablePoints.length; i++) {
+    double distance = _calculateDistance(_editablePoints[i], point);
+    if (distance < minDistance) {
+      closestIndex = i;
+      break;
+    }
+  }
+
+  setState(() {
+    if (_selectedPointIndex == null) {
+      if (closestIndex != null) {
+        _selectedPointIndex = closestIndex;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Point sélectionné. Appuyez maintenant pour le déplacer.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else if (closestIndex != null) {
+      final previousPoints = List<LatLng>.from(_editablePoints);
+
+      _editablePoints[_selectedPointIndex!] = point;
+      _selectedPointIndex = null;
+
+      try {
+        _editablePoints = _enforceConvexPolygon(_editablePoints);
+      } catch (e) {
+        debugPrint('Erreur lors du déplacement du point: $e');
+        _editablePoints = previousPoints;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de déplacer le point à cette position'),
+          ),
+        );
       }
     }
-
-    setState(() {
-      if (_selectedPointIndex == null) {
-        _selectedPointIndex = closestIndex;
-      } else if (closestIndex != null) {
-        final previousPoints = List<LatLng>.from(_editablePoints);
-
-        _editablePoints[_selectedPointIndex!] = point;
-        _selectedPointIndex = null;
-
-        try {
-          _editablePoints = _enforceConvexPolygon(_editablePoints);
-        } catch (e) {
-          debugPrint('Erreur lors du déplacement du point: $e');
-          _editablePoints = previousPoints;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Impossible de déplacer le point à cette position'),
-            ),
-          );
-        }
-      }
-    });
-  }
+  });
+}
 
   List<LatLng> _enforceConvexPolygon(List<LatLng> points) {
     if (points.length < 3) {
@@ -331,27 +340,34 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annuler'),
-        ),
-        TextButton(
-          onPressed: () {
-            if (_editablePoints.length >= 3) {
-              Navigator.of(context).pop(
-                  widget.polygon.copyWith(points: _editablePoints) // Utilisation de copyWith
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Le polygone doit avoir au moins 3 points'),
-                ),
-              );
-            }
-          },
-          child: const Text('Valider'),
-        ),
-      ],
+  TextButton(
+    onPressed: () => Navigator.of(context).pop(),
+    child: const Text('Annuler'),
+  ),
+  TextButton(
+    onPressed: () {
+      if (_editablePoints.length >= 3) {
+        // Convert _editablePoints back to a MapPolygon
+        MapPolygon updatedPolygon = MapPolygon(
+          id: int.parse(widget.polygon.id),
+          points: _editablePoints,
+          color: widget.polygon.color,
+          borderColor: widget.polygon.borderColor,
+          borderStrokeWidth: widget.polygon.borderStrokeWidth,
+        );
+        Navigator.of(context).pop(updatedPolygon);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le polygone doit avoir au moins 3 points'),
+          ),
+        );
+      }
+    },
+    child: const Text('Valider'),
+  ),
+],
+
     );
   }
 }

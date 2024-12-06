@@ -4,12 +4,12 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
-import 'funct/merge_polygone.dart';
-import 'funct/modif_polygone.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
 
+import 'funct/merge_polygone.dart';
+import 'funct/modif_polygone.dart';
+
 void main() {
-  // mode debeug TODO: a suprimmer a la fin de l'application
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
     print('${record.level.name}: ${record.time}: ${record.message}');
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-// Ecran de la carte geojson
+
 class GeoJsonMapScreen extends StatefulWidget {
   const GeoJsonMapScreen({super.key});
 
@@ -41,25 +41,21 @@ class GeoJsonMapScreen extends StatefulWidget {
 }
 
 class GeoJsonMapScreenState extends State<GeoJsonMapScreen> {
-  //Logger pour enregistrer les messages de debogages
   final Logger _logger = Logger('GeoJsonMapScreenState');
-  // MapPolygon est une classe qui represente un polygone sur la carte (id,liste points,bordure,ect
-
-  final List<MapPolygon> _polygons = []; // liste des polygones affiche sur la map
-
-  bool _isSelectionMode = false; // indique  si le mode de selection est active
-
-  final List<MapPolygon> _selectedPolygons = [];//liste des polygones selectionne
+  final List<MapPolygon> _polygons = [];
+  final List<MapPolygon> _selectedPolygons = [];
   final MapController _mapController = MapController();
-  // le controleur de la carte, package flutter_map
+
+  bool _isSelectionMode = false;
+  bool _creatingNewPolygon = false;
+  List<LatLng> _newPolygonPoints = [];
 
   @override
   void initState() {
     super.initState();
     _loadGeoJson();
-    //_loadGeoJson charge les donnes geojsondepuis un fichier et cree des polygones a partir des donnes
   }
-// on ajoute les polygones a la liste _polygons
+
   Future<void> _loadGeoJson() async {
     try {
       final String data = await rootBundle.loadString('assets/data.geojson');
@@ -74,7 +70,7 @@ class GeoJsonMapScreenState extends State<GeoJsonMapScreen> {
                 .toList();
             setState(() {
               _polygons.add(MapPolygon(
-                id: _polygons.length,
+                id: DateTime.now().millisecondsSinceEpoch,
                 points: polygonPoints,
                 color: Colors.blue.withOpacity(0.3),
                 borderColor: Colors.blue,
@@ -85,17 +81,43 @@ class GeoJsonMapScreenState extends State<GeoJsonMapScreen> {
         }
       }
     } catch (e) {
-      _logger.severe('Erreur de chargement du  GeoJSON', e);
+      _logger.severe('Erreur de chargement du GeoJSON', e);
     }
   }
-/// inverse le mode selection et clear la liste des polygones selectionnee
+
+  void _startPolygonCreation() {
+    setState(() {
+      _isSelectionMode = true;
+      _creatingNewPolygon = true;
+      _newPolygonPoints.clear();
+    });
+  }
+
+  void _finalizePolygonCreation() {
+    if (_newPolygonPoints.length >= 3) {
+      setState(() {
+        _polygons.add(MapPolygon(
+          id: DateTime.now().millisecondsSinceEpoch,
+          points: List.from(_newPolygonPoints),
+          color: Colors.blue.withOpacity(0.3),
+          borderColor: Colors.blue,
+          borderStrokeWidth: 3.0,
+        ));
+        _creatingNewPolygon = false;
+        _newPolygonPoints.clear();
+        _isSelectionMode = false;
+      });
+    }
+  }
+
   void _toggleSelectionMode() {
     setState(() {
       _isSelectionMode = !_isSelectionMode;
       _selectedPolygons.clear();
+      _creatingNewPolygon = false;
     });
   }
-/// la methode _selectPolygon() selectionne ou deselectionne un polygone si elle est deja presente
+
   void _selectPolygon(MapPolygon polygon) {
     setState(() {
       if (_selectedPolygons.contains(polygon)) {
@@ -105,76 +127,37 @@ class GeoJsonMapScreenState extends State<GeoJsonMapScreen> {
       }
     });
   }
-/// permet de merger une liste de polygones selectionne
+
   void _mergePolygons() {
     if (_selectedPolygons.length < 2) {
-      Alert(
-        context: context,
-        title: "Operation impossible",
-        desc: "Selectionnez au moins deux polygones",
-        image: Image.asset("assets/icons/cancel.png",
-          width: 100,
-          height: 100,
-        ),
-          buttons: [
-      DialogButton(
-        child: Text( "Retour"),
-          onPressed: () => Navigator.pop(context),
-          color: const Color.fromRGBO(0, 179, 134, 1.0),
-      )
-        ]
-      ).show();
+      _showErrorAlert('Select at least two polygons to merge');
       return;
     }
 
-    // Transformer chaque polygone selectionnee en sa liste de points
-    List<List<LatLng>> polygonsToMerge = _selectedPolygons.map((polygon) => polygon.points).toList();
-
-    // appel de merge_polygone.dart pour le merge
+    List<List<LatLng>> polygonsToMerge = _selectedPolygons.map((p) => p.points).toList();
     List<LatLng> mergedPoints = PolygonMerger.mergePolygons(polygonsToMerge);
 
     setState(() {
-      // Maj de l'etat de la carte
-      // Supression des polygones selectionnee de _polygons
       _polygons.removeWhere((p) => _selectedPolygons.contains(p));
-
-      // add du new polygone merge
       _polygons.add(MapPolygon(
-        id: _polygons.length , // trouver une alternative lorsque les id seront harmonise
+        id: DateTime.now().millisecondsSinceEpoch,
         points: mergedPoints,
         color: Colors.green.withOpacity(0.3),
         borderColor: Colors.green,
         borderStrokeWidth: 3.0,
       ));
 
-      // reset de la selection
       _selectedPolygons.clear();
       _isSelectionMode = false;
     });
   }
-// editer un polygone selectionne
+
   void _editPolygon() {
     if (_selectedPolygons.length != 1) {
-      Alert(
-          context: context,
-          title: "Operation impossible",
-          desc: "Selectionnez un unique polygone !",
-          image: Image.asset("assets/icons/cancel.png",
-            width: 100,
-            height: 100,
-          ),
-          buttons: [
-            DialogButton(
-              child: Text( "Retour"),
-              onPressed: () => Navigator.pop(context),
-              color: const Color.fromRGBO(0, 179, 134, 1.0),
-            )
-          ]
-      ).show();
+      _showErrorAlert('Select exactly one polygon to edit');
       return;
     }
-// affichange de la boite de dialogue d'edition
-    // showDialog() pour afficher une boite de dialogue
+
     showDialog<MapPolygon>(
       context: context,
       builder: (BuildContext context) => PolygonEditorDialog(
@@ -185,116 +168,37 @@ class GeoJsonMapScreenState extends State<GeoJsonMapScreen> {
           borderColor: _selectedPolygons.first.borderColor,
           borderStrokeWidth: _selectedPolygons.first.borderStrokeWidth,
         ),
-
-
       ),
-      // then est appelle lorsque showdialog est ferme
     ).then((editedPolygon) {
       if (editedPolygon != null) {
         setState(() {
-          // retrouver l'indice du polygone qui a ete modifier
           int index = _polygons.indexWhere((p) => p.id == editedPolygon.id);
           if (index != -1) {
             _polygons[index] = editedPolygon;
           }
+          _selectedPolygons.clear();
         });
       }
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-
-        title: Text(_isSelectionMode ? 'Selection de polygones' : 'SenMapEditor',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            color:Colors.lightGreen,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        actions: _isSelectionMode
-            ? [
-          IconButton(
-            // si le mode de selection est active,alors les boutons actions seront affiche
-            icon: const Icon(Icons.account_balance_wallet_outlined,
-              size: 36,
-              color: Colors.blue,
-
-            ),
-            onPressed: _mergePolygons,
-            tooltip: 'Mode Fusion', // texte visible si appuie long
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit,
-              size: 36,
-              color: Colors.deepPurple,
-            ),
-            onPressed: _editPolygon,
-            tooltip: 'Mode Edition',
-          ),
-        ]
-            : [],
-      ),
-      body: Stack( // Stack, permet de superposer des widgets
-        children: [
-          FlutterMap(
-            // _mapController est une instance de MapController fournis par fluttermap
-            // permet de controler et interagir avec la carte
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: const LatLng(14.80046963, -17.24228481),
-              initialZoom: 13.0,
-              onTap: _isSelectionMode // si mode selection active
-                  ? (tapPosition, point) {
-                //tapPosition : position tape par l'user
-                //point coordonnee du point tape
-
-                // parcour _polygon pour verifier si un point est dans un des polygones
-                for (var polygonData in _polygons) {
-                  // la methode _isPointInPolygon definie en bas
-                  if (_isPointInPolygon(point, polygonData.points)) {
-                    _selectPolygon(polygonData);
-                    //si le point est a l'interieur, alors le selectionner
-                    break;
-                  }
-                }
-              }
-                  : null,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                subdomains: const ['a', 'b', 'c'],
-              ),
-              PolygonLayer(
-                polygons: _polygons.map((polygonData) => polygonData.toPolygon()).toList(),
-              ),
-
-            ],
-          ),
-          Positioned(
-            bottom: 16,
-            left: 16,
-            child: FloatingActionButton(
-              // _toggleSelectionMode inverse le mode de selection
-              onPressed: _toggleSelectionMode,
-              backgroundColor: _isSelectionMode ? Colors.red : Colors.blue,
-              child: Icon(_isSelectionMode ? Icons.close : Icons.tab_unselected,
-                size: 30,),
-            ),
-          ),
-        ],
-      ),
-    );
+  void _showErrorAlert(String message) {
+    Alert(
+      context: context,
+      title: "Operation Impossible",
+      desc: message,
+      image: Image.asset("assets/icons/cancel.png", width: 100, height: 100),
+      buttons: [
+        DialogButton(
+          child: const Text("Return"),
+          onPressed: () => Navigator.pop(context),
+          color: const Color.fromRGBO(0, 179, 134, 1.0),
+        )
+      ]
+    ).show();
   }
-// Pour determiner si un point est a l'interieur d'un polygone
-// Algorithme de ray-casting
-// voir https://xymaths.fr/MathAppli/Algorithme-Interieur-Polygone/
-// Un point est a l'interieur sssi une demi droite passant par ce point coupant le polygone le coupe en un nombre impaire de poits
-  bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
+
+  bool _isPointInsidePolygon(LatLng point, List<LatLng> polygon) {
     bool inside = false;
     int j = polygon.length - 1;
     for (int i = 0; i < polygon.length; j = i++) {
@@ -307,8 +211,134 @@ class GeoJsonMapScreenState extends State<GeoJsonMapScreen> {
     }
     return inside;
   }
+
+  Polygon _createPolygon(MapPolygon polygonData, bool isSelected) {
+    return Polygon(
+      points: polygonData.points,
+      color: isSelected ? polygonData.color.withOpacity(0.5) : polygonData.color,
+      borderColor: polygonData.borderColor,
+      borderStrokeWidth: polygonData.borderStrokeWidth,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _isSelectionMode ? 'Selection de polygones' : 'SenMapEditor',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.lightGreen,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        actions: _isSelectionMode
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.account_balance_wallet_outlined, size: 36, color: Colors.blue),
+                  onPressed: _mergePolygons,
+                  tooltip: 'Mode Fusion',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 36, color: Colors.deepPurple),
+                  onPressed: _editPolygon,
+                  tooltip: 'Mode Edition',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add, size: 36, color: Colors.green),
+                  onPressed: _startPolygonCreation,
+                  tooltip: 'Créer un polygone',
+                ),
+              ]
+            : [
+                IconButton(
+                  icon: const Icon(Icons.select_all),
+                  onPressed: _toggleSelectionMode,
+                  tooltip: 'Mode Sélection',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add, size: 36, color: Colors.green),
+                  onPressed: _startPolygonCreation,
+                  tooltip: 'Créer un polygone',
+                ),
+              ],
+      ),
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: const LatLng(14.80046963, -17.24228481),
+              initialZoom: 13.0,
+              onTap: _isSelectionMode
+                  ? (tapPosition, point) {
+                      if (_creatingNewPolygon) {
+                        setState(() {
+                          _newPolygonPoints.add(point);
+                          
+                          if (_newPolygonPoints.length >= 3) {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) => AlertDialog(
+                                title: const Text('Créer un polygone'),
+                                content: const Text('Voulez-vous finaliser ce polygone ?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      _finalizePolygonCreation();
+                                    },
+                                    child: const Text('Oui'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text('Continuer'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        });
+                      } else {
+                        for (var polygonData in _polygons) {
+                          if (_isPointInsidePolygon(point, polygonData.points)) {
+                            _selectPolygon(polygonData);
+                            break;
+                          }
+                        }
+                      }
+                    }
+                  : null,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
+              ),
+              PolygonLayer(
+                polygons: _polygons.map((polygonData) => 
+                  _createPolygon(polygonData, _selectedPolygons.contains(polygonData))
+                ).toList(),
+              ),
+            ],
+          ),
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: FloatingActionButton(
+              onPressed: _toggleSelectionMode,
+              backgroundColor: _isSelectionMode ? Colors.red : Colors.blue,
+              child: Icon(_isSelectionMode ? Icons.close : Icons.tab_unselected, size: 30),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
-//  representation d'un polygone sur la carte
+
 class MapPolygon {
   final int id;
   final List<LatLng> points;
@@ -324,7 +354,6 @@ class MapPolygon {
     required this.borderStrokeWidth,
   });
 
-  // Convertir un objet MapPolygon en polygone au sens de flutter_map
   Polygon toPolygon() {
     return Polygon(
       points: points,

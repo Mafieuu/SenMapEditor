@@ -10,3 +10,6 @@ back_end/data_out/*
 !back_end/data_in/readme.md
 !back_end/data_out/readme.md
 # back_end/data_processing/user.json est suivi par git
+
+
+*.mbtiles

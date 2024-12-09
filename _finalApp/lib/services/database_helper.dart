@@ -1,8 +1,7 @@
 import 'dart:io';
-
 import 'package:flutter/services.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import '../models/user.dart';
 import '../models/zone.dart';
 import '../models/polygone.dart';
@@ -25,36 +24,54 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-
     _database = await _initDB('database.db');
     return _database!;
   }
-// Sqlite ne peut pas lire les fichiers present dans asset
 
   Future<Database> _initDB(String fileName) async {
-    final dbPath = await getDatabasesPath(); // Chemin où SQLite peut lire et écrire
+    final dbPath = await getDatabasesPath();
     final path = join(dbPath, fileName);
-    // TODO: suprimmer les print de debogage
-    print('Chemin de la base de données : $path');
-    print('Le fichier existe ? : ${await File(path).exists()}');
 
-    // Vérifiez si le fichier existe déjà
-    final exists = await File(path).exists();
-    if (!exists) {
-      print('Tentative de copie depuis assets');
+    // Toujours copier la base de données depuis les assets
+    print('Chemin de la base de données : $path');
+
+    try {
+      // Charger les données depuis les assets
       final data = await rootBundle.load('assets/$fileName');
       final bytes = data.buffer.asUint8List();
 
-      // Créez le fichier et écrivez les données
-      await File(path).writeAsBytes(bytes);
-      print('Fichier copié avec succès');
+      // Écrire les données dans le chemin de la base de données
+      await File(path).writeAsBytes(bytes, flush: true);
+
+      print('Base de données copiée avec succès');
+    } catch (e) {
+      print('Erreur lors de la copie de la base de données : $e');
     }
+
     return await openDatabase(
       path,
       version: 1,
-      onCreate: null,
+      onCreate: _onCreate,
       onConfigure: _onConfigure,
     );
+  }
+
+  Future<void> _onCreate(Database db, int version) async {
+    print('Base de données créée. Insertion des données initiales.');
+// *************************************************************************
+    // Solution temporaire:user par defaut
+    // Insérer les utilisateurs par défaut
+    await db.transaction((txn) async {
+      await txn.rawInsert(
+          'INSERT INTO utilisateurs (nom, paswd) VALUES (?, ?), (?, ?), (?, ?), (?, ?)',
+          [
+            'diouf_abdou221', 'dakar123',
+
+            'diome_fatou221', 'passer',
+            'sarr_fellwin221', 'senegal123'
+          ]
+      );
+    });
   }
 
   // Activation des clés étrangères
@@ -62,33 +79,32 @@ class DatabaseHelper {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  // Méthodes CRUD existantes
+  // Méthode de débogage
+  Future<void> debugDatabase() async {
+    final db = await instance.database;
+
+    // Vérifier les tables
+    List<Map<String, dynamic>> tables = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
+    print('Tables dans la base de données : $tables');
+
+    // Vérifier les utilisateurs
+    List<Map<String, dynamic>> users = await db.query('utilisateurs');
+    print('Utilisateurs dans la base de données : $users');
+
+    // Vérifier le nombre d'utilisateurs
+    int? userCount = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM utilisateurs'));
+    print('Nombre total d\'utilisateurs : $userCount');
+  }
 
   Future<User?> getUser(String nom, String paswd) async {
     try {
-    final db = await instance.database;
-    print('Base de données ouverte avec succès');
+      // Déboguer la base de données avant la tentative de connexion
+      await debugDatabase();
 
-      // debogage
+      final db = await instance.database;
 
-      // Verifions  si la table existe
-      var tables = await db.query('sqlite_master', where: 'type = ?', whereArgs: ['table']);
-      print('Tables existantes : $tables');
+      print('Tentative de connexion - Nom: $nom, Mot de passe: $paswd');
 
-
-    // Vérifier le schéma de la table utilisateurs
-    List<Map<String, dynamic>> columns = await db.rawQuery("PRAGMA table_info(utilisateurs)");
-    print('Colonnes de la table utilisateurs : $columns');
-
-    // Afficher tous les utilisateurs
-    List<Map<String, dynamic>> allUsers = await db.query(tableUsers);
-    print('Tous les utilisateurs : $allUsers');
-      //  avant la requête
-      print('--------------------------------- Tentative de connexion:');
-      print('Nom recherché: $nom');
-      print('Mot de passe recherché: $paswd');
-
-      print('Recherche de l\'utilisateur - Nom: $nom, Mot de passe: $paswd');
       final maps = await db.query(
         tableUsers,
         columns: ['id', 'nom', 'paswd'],
@@ -96,14 +112,12 @@ class DatabaseHelper {
         whereArgs: [nom, paswd],
         limit: 1,
       );
-      // résultat de la requête
-      print(' ***************************************************** Résultats de la requête:');
-      print('Nombre de résultats: ${maps.length}');
-      maps.forEach((map) => print('Utilisateur trouvé: $map'));
+
+      print('Résultats de la requête : ${maps.length}');
 
       return maps.isNotEmpty ? User.fromMap(maps.first) : null;
     } catch (e) {
-      print('Erreur lors de la récupération de l\'utilisateur: $e');
+      print('Erreur lors de la connexion : $e');
       return null;
     }
   }
@@ -124,7 +138,6 @@ class DatabaseHelper {
       return [];
     }
   }
-
   Future<List<Polygone>> getPolygonsByZone(int zoneId) async {
     final db = await instance.database;
     try {

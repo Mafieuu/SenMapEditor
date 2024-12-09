@@ -56,8 +56,9 @@ class AppStateProvider extends ChangeNotifier {
 
   /// Charge les zones associées à l'utilisateur actuel.
   Future<void> loadZones() async {
+    var _currentUser = this._currentUser;
     if (_currentUser != null) {
-      _zones = await DatabaseHelper.instance.getZonesByUser(_currentUser!.id);
+      _zones = await DatabaseHelper.instance.getZonesByUser(_currentUser!.id!);
       notifyListeners();
     }
   }
@@ -79,7 +80,7 @@ class AppStateProvider extends ChangeNotifier {
 
   /// Crée un nouveau polygone.
   Future<void> createPolygon(List<LatLng> points) async {
-    if (_currentUser == null || _currentZone == null) {
+    if (_currentUser == null || _currentUser!.id == null || _currentZone == null) {
       print('Utilisateur ou zone non sélectionné');
       return;
     }
@@ -88,7 +89,7 @@ class AppStateProvider extends ChangeNotifier {
       final newPolygon = await PolygonOperations.createPolygon(
         points: points,
         zoneId: _currentZone!.id,
-        userId: _currentUser!.id,
+        userId: _currentUser!.id!, // Utilisez l'opérateur ! ici
       );
 
       if (newPolygon != null) {
@@ -112,7 +113,7 @@ class AppStateProvider extends ChangeNotifier {
       final success = await PolygonOperations.deletePolygon(
         polygonId: polygonToDelete.id,
         zoneId: _currentZone!.id,
-        userId: _currentUser!.id,
+        userId: _currentUser!.id!,
       );
 
       if (success) {
@@ -137,7 +138,7 @@ class AppStateProvider extends ChangeNotifier {
       final success = await PolygonOperations.mergePolygons(
         polygonIds: polygonIds,
         zoneId: _currentZone!.id,
-        userId: _currentUser!.id,
+        userId: _currentUser!.id!,
       );
 
       if (success) {
@@ -161,7 +162,7 @@ class AppStateProvider extends ChangeNotifier {
         polygonId: polygonId,
         newPoints: newPoints,
         zoneId: _currentZone!.id,
-        userId: _currentUser!.id,
+        userId: _currentUser!.id!,
       );
 
       if (success) {

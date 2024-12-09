@@ -1,5 +1,17 @@
 
 # Application Flutter de Gestion des Polygones
+## Note: 
+La version la plus aboutie de l'application se trouve dans la branche final_app de ce dépôt GitHub https://github.com/Mafieuu/SenMapEditor/tree/final_app , dans le dossier _finalapp. Elle comporte une page de connexion, un bouton pour se déconnecter, un bouton pour sauvegarder les modifications, ainsi que les fonctionnalités de création et de suppression de polygones. De plus, elle utilise une base de données locale SQLite similaire à celle présente sur AWS, abandonnant les fichiers GeoJSON au profit de SQLite pour faciliter le transfert des données modifiées par l'utilisateur de son appareil mobile vers le cloud.
+
+Malheureusement, cette version comporte un bug qui empêche l'utilisateur de se connecter. Nous tentons de résoudre ce problème, mais en raison des contraintes de temps et des exigences académiques de notre école, nous n'avons pas encore réussi. Par conséquent, nous sommes contraints de nous rabattre sur une version moins sophistiquée de notre application, qui se trouve dans la **branche main** dans le dossier **senmapeditor**.
+
+![Page d'accueil](login.png)
+
+![Éditeur de polygones](editeur.png)
+
+![Fusion de polygones](merge.png)
+
+![Sélection de polygones](selection.png)
 
 ## Description
 Cette application Flutter permet d'afficher et de modifier des polygones à partir d'un fichier GeoJSON de Sangalkam. Elle inclut un système d'authentification basé sur un fichier JSON local.

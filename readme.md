@@ -2,14 +2,11 @@
 # Application Flutter de Gestion des Polygones
 ![Page d'accueil](login.png)
 
-![editeur de polygones](editeur.png)
+![Éditeur de polygones](editeur.png)
 
-![fusions de polygones](merge.png)
-![selection de polygones](selection.png)
+![Fusion de polygones](merge.png)
 
-<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
-
-
+![Sélection de polygones](selection.png)
 
 
 ## Description
@@ -17,13 +14,15 @@ Cette application Flutter permet de gérer et de modifier des polygones à parti
 
 ## Fonctionnalités
 
-    - Gestion des polygones : Modification et fusion de polygones avec des algorithmes mathématiques fiables.
-    - Base de données SQLite : Conversion des fichiers GeoJSON en une base locale SQLite, - - - pouvant être mise à jour depuis le cloud via un bouton Upgrade (...).
-   -  Authentification : Page d'identification
-   -  Déconnexion : Bouton pour se déconnecter .
-   -  Sauvegarde local avec SQLite
-    Mise à jour cloud : Synchronisation des données locales avec les dernières mises à jour du cloud (...)
+- **Gestion des polygones** : Modification et fusion de polygones avec des algorithmes mathématiques fiables.
+- **Base de données SQLite** : Conversion des fichiers GeoJSON en une base locale SQLite, pouvant être mise à jour depuis le cloud via un bouton "Upgrade".
+- **Authentification** : Page d'identification pour se connecter à l'application.
+- **Déconnexion** : Bouton pour se déconnecter.
+- **Sauvegarde locale avec SQLite** : Enregistrement des données localement pour une gestion optimisée des polygones.
+- **Mise à jour cloud** : Synchronisation des données locales avec les dernières mises à jour du cloud.
+## Utilisation
 
+1. Clonez le répertoire, allez à la branche `final_app` et dans le dossier `_finalApp`, puis exécutez la commande suivante : flutter run
 ## Utilisation
 1. clonnez le repertoire,aller a la branche final_app et dans le dossier _finalApp puis <flutter run>
 

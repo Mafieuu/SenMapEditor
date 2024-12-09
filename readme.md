@@ -13,6 +13,15 @@ Malheureusement, cette version comporte un bug qui empêche l'utilisateur de se 
 
 ![Sélection de polygones](selection.png)
 
+Nous avons aussi cree une documentation readthedoc accessible depuis le lien :probleme de deploiement,voir https://github.com/Mafieuu/Geo_ia_vision_doc pour plus d'informations
+![page web de la documentation](doc.png)
+![documentation:section selection](doc_selection.png)
+doc_selection
+
+Nous avons aussi deployer une application streamlit accessible depuis : https://geoiavisionwebapp.streamlit.app/
+![Application web ](web.png)
+
+
 ## Description
 Cette application Flutter permet d'afficher et de modifier des polygones à partir d'un fichier GeoJSON de Sangalkam. Elle inclut un système d'authentification basé sur un fichier JSON local.
 
@@ -28,8 +37,8 @@ Cette application Flutter permet d'afficher et de modifier des polygones à part
    ```bash
    flutter run
    ```
-2. À l'ouverture de l'application, l'utilisateur peut s'inscrire ou se connecter.
-   - **Inscription** : Fournir prénom, nom, pseudonyme, mot de passe et choisir une zone parmi une liste de zones. Les informations sont enregistrées dans un fichier JSON.
+2. À l'ouverture de l'application, l'utilisateur peut se connecter.
+
    - **Connexion** : Saisir le pseudonyme et le mot de passe pour vérifier les informations dans le fichier JSON.
 
 3. Si la connexion est réussie :
@@ -43,7 +52,7 @@ Cette application Flutter permet d'afficher et de modifier des polygones à part
 - [ ] Optimiser le processus de téléchargement et de vérification des fichiers GeoJSON depuis AWS.
 - [ ] Améliorer l'interface utilisateur pour une meilleure expérience utilisateur.
 - [ ] Ajouter des tests unitaires et d'intégration pour assurer la fiabilité de l'application.
-## Note important 
+### Note important 
 Dans la branche debug il y'a une version de l'application qui utulise des tuiles et une autre qui implemente un interface user
 cependant ma config de java m'empeche de compiler ces applications (qui n'ont pas d'erreur selon le compilateur)
 

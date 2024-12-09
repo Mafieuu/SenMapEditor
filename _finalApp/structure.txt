@@ -1,0 +1,137 @@
+lib/
+├── main.dart
+├── models/
+│   ├── user.dart
+│   ├── zone.dart
+│   ├── polygone.dart
+│   └── action_log.dart
+├── services/
+│   ├── database_helper.dart
+│   ├── auth_service.dart
+│   ├── zone_service.dart
+│   └── geojson_service.dart
+├── providers/
+│   └── app_state_provider.dart
+├── screens/
+│   ├── login_screen.dart
+│   ├── home_screen.dart
+│   ├── map_screen.dart
+│   └── zone_selection_screen.dart
+├── widgets/
+│   ├── custom_app_bar.dart
+│   ├── loading_indicator.dart
+│   └── error_dialog.dart
+└── utils/
+    └── constants.dart
+
+Objectif de l'application
+L'application "SenMapEditor- ENSAE" est conçue pour permettre aux utilisateurs de gérer des polygones géographiques sur une carte. Les utilisateurs peuvent se connecter, sélectionner une zone géographique, télécharger des fichiers GeoJSON correspondants, et effectuer diverses actions sur les polygones, telles que la création, la modification, la fusion et la suppression. Toutes les actions sont enregistrées dans une base de données SQLite.
+
+Fonctionnalités principales
+Connexion utilisateur :
+
+Les utilisateurs doivent saisir leur identifiant et mot de passe pour se connecter.
+
+Si les informations d'identification sont correctes, l'utilisateur est redirigé vers l'écran d'accueil.
+
+Sélection de la zone :
+
+Après la connexion, l'utilisateur peut sélectionner une zone géographique parmi celles qui lui sont attribuées.
+
+Si le fichier GeoJSON correspondant à la zone sélectionnée n'est pas disponible, l'utilisateur est invité à le télécharger depuis les serveurs AWS (fonctionnalité à implémenter).
+
+Affichage de la carte :
+
+Une fois la zone sélectionnée, l'application charge et affiche les polygones de la zone sur une carte interactive.
+
+Les polygones sont affichés avec leurs couleurs et bordures définies.
+
+Actions sur les polygones :
+
+Création : Les utilisateurs peuvent créer de nouveaux polygones en ajoutant des points sur la carte.
+
+Modification : Les utilisateurs peuvent modifier les polygones existants en ajoutant, supprimant ou déplaçant des points.
+
+Fusion : Les utilisateurs peuvent fusionner plusieurs polygones en un seul.
+
+Suppression : Les utilisateurs peuvent supprimer des polygones existants.
+
+Enregistrement des actions :
+
+Toutes les actions effectuées par les utilisateurs (création, modification, fusion, suppression) sont enregistrées dans une base de données SQLite.
+
+Les actions sont associées à l'utilisateur, à la zone et aux polygones concernés.
+
+Déconnexion :
+
+Les utilisateurs peuvent se déconnecter de l'application.
+
+Avant la déconnexion, toutes les modifications non enregistrées sont sauvegardées dans la base de données.
+
+Transfert de la sauvegarde :
+
+Un bouton "Transférer ma sauvegarde" permet de simuler le transfert de la base de données vers AWS (fonctionnalité fictive pour le moment).
+
+Structure de l'application
+L'application est organisée en plusieurs dossiers pour une meilleure gestion du code :
+
+lib/ :
+
+main.dart : Point d'entrée de l'application.
+
+models/ : Contient les modèles de données (user.dart, zone.dart, polygone.dart, action_log.dart).
+
+services/ : Contient les services pour la gestion de la base de données, l'authentification, la gestion des zones et des fichiers GeoJSON.
+
+providers/ : Contient le fournisseur d'état de l'application (app_state_provider.dart).
+
+screens/ : Contient les écrans de l'application (login_screen.dart, home_screen.dart, map_screen.dart, zone_selection_screen.dart).
+
+widgets/ : Contient les widgets personnalisés (custom_app_bar.dart, loading_indicator.dart, error_dialog.dart).
+
+utils/ : Contient les constantes utilitaires (constants.dart).
+
+funct/ : Contient les fonctions pour la gestion des polygones (merge_polygone.dart, modif_polygone.dart, create_polygone.dart, delete_polygone.dart).
+
+Fonctionnement de l'application
+Connexion utilisateur :
+
+L'utilisateur ouvre l'application et est dirigé vers l'écran de connexion (login_screen.dart).
+
+L'utilisateur saisit son identifiant et mot de passe, qui sont vérifiés par le service d'authentification (auth_service.dart).
+
+Si les informations sont correctes, l'utilisateur est redirigé vers l'écran d'accueil (home_screen.dart).
+
+Sélection de la zone :
+
+Depuis l'écran d'accueil, l'utilisateur peut accéder à l'écran de sélection de la zone (zone_selection_screen.dart).
+
+L'utilisateur sélectionne une zone parmi celles qui lui sont attribuées.
+
+Si le fichier GeoJSON correspondant à la zone n'est pas disponible, l'utilisateur est invité à le télécharger (fonctionnalité à implémenter).
+
+Affichage de la carte :
+
+Une fois la zone sélectionnée, l'utilisateur est redirigé vers l'écran de la carte (map_screen.dart).
+
+L'application charge et affiche les polygones de la zone sur une carte interactive.
+
+Actions sur les polygones :
+
+L'utilisateur peut effectuer des actions sur les polygones en utilisant les boutons de la barre d'outils (création, modification, fusion, suppression).
+
+Les actions sont gérées par les fonctions correspondantes dans le dossier funct.
+
+Enregistrement des actions :
+
+Toutes les actions effectuées par l'utilisateur sont enregistrées dans la base de données SQLite via le fournisseur d'état (app_state_provider.dart).
+
+Déconnexion :
+
+L'utilisateur peut se déconnecter en utilisant le bouton de déconnexion dans la barre d'application personnalisée (custom_app_bar.dart).
+
+Avant la déconnexion, toutes les modifications non enregistrées sont sauvegardées dans la base de données.
+
+Transfert de la sauvegarde :
+
+L'utilisateur peut utiliser le bouton "Transférer ma sauvegarde" pour simuler le transfert de la base de données vers AWS (fonctionnalité fictive pour le moment).

@@ -41,10 +41,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SenMapEditor- ENSAE',
-      debugShowCheckedModeBanner: false, // Supprime la bannière debug
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        useMaterial3: true,  // Utiliser Material 3
+        useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,
           brightness: Brightness.light,
@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       darkTheme: ThemeData(
-        // Configuration du thème sombre
+        // ---- thème sombre
         brightness: Brightness.dark,
         primarySwatch: Colors.blue,
         useMaterial3: true,

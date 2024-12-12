@@ -14,10 +14,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 20,
-          color: Colors.lightGreen,
+          color: Colors.yellow,
         ),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.orange,
       actions: [
         IconButton(
           icon: const Icon(Icons.logout),

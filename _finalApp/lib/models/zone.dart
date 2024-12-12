@@ -3,9 +3,13 @@ class Zone {
   final String nom;
   final int? utilisateurId;
 
-  Zone({required this.id, required this.nom, this.utilisateurId});
+  Zone({
+    required this.id, 
+    required this.nom, 
+    this.utilisateurId
+  });
 
-  factory Zone.fromMap(Map<String, dynamic> map) {
+  factory Zone.fromMap(Map map) {
     return Zone(
       id: map['id'],
       nom: map['nom'],

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import '../funct/modif_polygone.dart';
 import '../funct/polygon_operations.dart';
 import '../models/user.dart';
 import '../models/zone.dart';
@@ -6,39 +8,48 @@ import '../models/polygone.dart';
 import '../services/database_helper.dart';
 import 'package:latlong2/latlong.dart';
 
-class AppStateProvider extends ChangeNotifier {
+
+class AppStateProvider with ChangeNotifier {
   User? _currentUser;
   Zone? _currentZone;
   List<Zone> _zones = [];
   List<Polygone> _polygons = [];
   List<Polygone> _selectedPolygons = [];
 
+  // Getters
   User? get currentUser => _currentUser;
   Zone? get currentZone => _currentZone;
   List<Zone> get zones => _zones;
   List<Polygone> get polygons => _polygons;
   List<Polygone> get selectedPolygons => _selectedPolygons;
 
-  /// Authentifie l'utilisateur avec le nom et le mot de passe fournis.
-  Future<bool> login(String nom, String paswd) async {
-    final user = await DatabaseHelper.instance.getUser(nom, paswd);
-
-
-    // TODO: delete les astuces de debogages
-  print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx resultat de getUser");
-    print('Résultat de getUser : $user');
-    if (user != null) {
-      _currentUser = user;
-      await loadZones(); // Charger automatiquement les zones après la connexion
-      notifyListeners();
-      return true;
+  // Vérification de l'état de base
+  bool _checkUserAndZone() {
+    if (_currentUser == null || _currentUser!.id == null || _currentZone == null) {
+      print('Utilisateur ou zone non sélectionné');
+      return false;
     }
-    return false;
+    return true;
   }
 
-  /// Déconnecte l'utilisateur actuel et sauvegarde les changements dans la base de données.
-  Future<void> logout() async {
-    await _saveChanges();
+  // Authentification
+  Future<bool> login(String username, String password) async {
+    try {
+      final user = await DatabaseHelper.instance.getUser(username, password);
+      if (user != null) {
+        _currentUser = user;
+        await loadZones();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Erreur de connexion : $e');
+      return false;
+    }
+  }
+
+  void logout() {
     _currentUser = null;
     _currentZone = null;
     _zones = [];
@@ -47,30 +58,20 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sauvegarde les changements dans la base de données.
-  Future<void> _saveChanges() async {
-    for (var polygon in _polygons) {
-      await DatabaseHelper.instance.insertPolygone(polygon);
-    }
-  }
-
-  /// Charge les zones associées à l'utilisateur actuel.
+  // Gestion des zones
   Future<void> loadZones() async {
-    var _currentUser = this._currentUser;
     if (_currentUser != null) {
       _zones = await DatabaseHelper.instance.getZonesByUser(_currentUser!.id!);
       notifyListeners();
     }
   }
 
-  /// Définit la zone actuelle et charge ses polygones.
   void setCurrentZone(Zone zone) {
     _currentZone = zone;
-    loadPolygons(); // Charger automatiquement les polygones de la zone
+    loadPolygons();
     notifyListeners();
   }
 
-  /// Charge les polygones associés à la zone actuelle.
   Future<void> loadPolygons() async {
     if (_currentZone != null) {
       _polygons = await DatabaseHelper.instance.getPolygonsByZone(_currentZone!.id);
@@ -78,18 +79,33 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  /// Crée un nouveau polygone.
-  Future<void> createPolygon(List<LatLng> points) async {
-    if (_currentUser == null || _currentUser!.id == null || _currentZone == null) {
-      print('Utilisateur ou zone non sélectionné');
-      return;
+  // Gestion des polygones sélectionnés
+  void selectPolygon(Polygone polygon) {
+    if (!_selectedPolygons.contains(polygon)) {
+      _selectedPolygons.add(polygon);
+      notifyListeners();
     }
+  }
+
+  void unselectPolygon(Polygone polygon) {
+    _selectedPolygons.remove(polygon);
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedPolygons.clear();
+    notifyListeners();
+  }
+
+  // Opérations sur les polygones
+  Future<void> createPolygon(List<LatLng> points) async {
+    if (!_checkUserAndZone()) return;
 
     try {
       final newPolygon = await PolygonOperations.createPolygon(
         points: points,
         zoneId: _currentZone!.id,
-        userId: _currentUser!.id!, // Utilisez l'opérateur ! ici
+        userId: _currentUser!.id!,
       );
 
       if (newPolygon != null) {
@@ -101,11 +117,8 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  /// Supprime un polygone.
   Future<void> deletePolygon() async {
-    if (_selectedPolygons.isEmpty || _currentUser == null || _currentZone == null) {
-      return;
-    }
+    if (_selectedPolygons.isEmpty || !_checkUserAndZone()) return;
 
     final polygonToDelete = _selectedPolygons.first;
 
@@ -126,11 +139,8 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  /// Fusionne des polygones.
   Future<void> mergeSelectedPolygons() async {
-    if (_selectedPolygons.length < 2 || _currentUser == null || _currentZone == null) {
-      return;
-    }
+    if (_selectedPolygons.length < 2 || !_checkUserAndZone()) return;
 
     try {
       final polygonIds = _selectedPolygons.map((p) => p.id).toList();
@@ -142,7 +152,7 @@ class AppStateProvider extends ChangeNotifier {
       );
 
       if (success) {
-        await loadPolygons(); // Recharger les polygones après la fusion
+        await loadPolygons();
         _selectedPolygons.clear();
         notifyListeners();
       }
@@ -151,11 +161,31 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  /// Modifie un polygone.
-  Future<void> modifyPolygon(int polygonId, List<LatLng> newPoints) async {
-    if (_currentUser == null || _currentZone == null) {
-      return;
+  // Nouvelle méthode pour ouvrir le dialogue d'édition
+  Future<void> showPolygonEditor(BuildContext context, Polygone polygon) async {
+    if (!_checkUserAndZone()) return;
+
+    final List<LatLng>? modifiedPoints = await showDialog<List<LatLng>>(
+      context: context,
+      builder: (context) => PolygonEditorDialog(
+        polygonId: polygon.id,
+        zoneId: _currentZone!.id,
+        userId: _currentUser!.id!,
+        initialPoints: polygon.points,
+        onPolygonModified: (points) async {
+          await loadPolygons(); // Recharger les polygones après modification
+        },
+      ),
+    );
+
+    if (modifiedPoints != null) {
+      await loadPolygons(); // Recharger les polygones après fermeture du dialogue
     }
+  }
+
+  // Méthode modifyPolygon simplifiée car la logique est maintenant dans PolygonEditorDialog
+  Future<void> modifyPolygon(int polygonId, List<LatLng> newPoints) async {
+    if (!_checkUserAndZone()) return;
 
     try {
       final success = await PolygonOperations.modifyPolygon(
@@ -166,7 +196,7 @@ class AppStateProvider extends ChangeNotifier {
       );
 
       if (success) {
-        await loadPolygons(); // Recharger les polygones pour refléter la modification
+        await loadPolygons();
         notifyListeners();
       }
     } catch (e) {
@@ -174,7 +204,6 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  /// Transfère la sauvegarde de la base de données vers AWS (fonctionnalité fictive).
   void transferBackupToAWS() {
     print("Transfert de la sauvegarde vers AWS...");
   }

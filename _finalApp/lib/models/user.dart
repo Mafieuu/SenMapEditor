@@ -1,22 +1,19 @@
 class User {
-  final int? id;
+  final int id;
   final String nom;
-  final String paswd;
+  final int? zoneId;
 
   User({
-    this.id,
-    required this.nom,
-    required this.paswd,
+    required this.id, 
+    required this.nom, 
+    this.zoneId
   });
 
-  // Ajoutez un getter qui gère le cas où l'ID est null
-  int get safeId => id ?? 0;
-
-  factory User.fromMap(Map<String, dynamic> map) {
+  factory User.fromMap(Map map) {
     return User(
-      id: map['id'] as int?,
-      nom: map['nom'] as String,
-      paswd: map['paswd'] as String,
+      id: map['id'],
+      nom: map['nom'],
+      zoneId: map['zone_id'],
     );
   }
 
@@ -24,7 +21,7 @@ class User {
     return {
       'id': id,
       'nom': nom,
-      'paswd': paswd,
+      'zone_id': zoneId,
     };
   }
 }

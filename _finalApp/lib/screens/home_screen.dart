@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
 import '../widgets/custom_app_bar.dart';
 
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -16,8 +15,9 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Accueil - ${user?.nom ?? ""}',
-        onLogout: () async {
-          await appState.logout();
+
+        onLogout: () {
+          appState.logout();
           Navigator.pushReplacementNamed(context, '/login');
         },
       ),

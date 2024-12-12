@@ -24,7 +24,14 @@ void main() async {
     ),
   );
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AppStateProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -32,51 +39,48 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AppStateProvider(),
-      child: MaterialApp(
-        title: 'SenMapEditor- ENSAE',
-        debugShowCheckedModeBanner: false, // Supprime la bannière debug
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          useMaterial3: true,  // Utiliser Material 3
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.light,
-          ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          scaffoldBackgroundColor: Colors.white,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+    return MaterialApp(
+      title: 'SenMapEditor- ENSAE',
+      debugShowCheckedModeBanner: false, // Supprime la bannière debug
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,  // Utiliser Material 3
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.light,
         ),
-        darkTheme: ThemeData(
-          // Configuration du thème sombre
-          brightness: Brightness.dark,
-          primarySwatch: Colors.blue,
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.dark,
-          ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          elevation: 0,
         ),
-        themeMode: ThemeMode.system, // Suivre le thème système
-        initialRoute: '/login',
-        routes: {
-          '/login': (context) => const LoginScreen(),
-          '/home': (context) => const HomeScreen(),
-          '/map': (context) => const MapScreen(),
-          '/zone_selection': (context) => const ZoneSelectionScreen(),
-        },
-        // Gestion des erreurs de navigation
-        onUnknownRoute: (settings) {
-          return MaterialPageRoute(
-            builder: (context) => const HomeScreen(),
-          );
-        },
+        scaffoldBackgroundColor: Colors.white,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      darkTheme: ThemeData(
+        // Configuration du thème sombre
+        brightness: Brightness.dark,
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+      ),
+      themeMode: ThemeMode.system, // Suivre le thème système
+      initialRoute: '/login',
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/map': (context) => const MapScreen(),
+        '/zone_selection': (context) => const ZoneSelectionScreen(),
+      },
+      // Gestion des erreurs de navigation
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+        );
+      },
     );
   }
 }

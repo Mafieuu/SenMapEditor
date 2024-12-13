@@ -155,7 +155,7 @@ class _MapScreenState extends State<MapScreen> {
       body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(
-          initialCenter: LatLng(14.6937, -17.4441), // Coordonnées par défaut (Dakar)
+          initialCenter: LatLng(14.6937, -17.4441),
           initialZoom: 13.0,
         ),
         children: [

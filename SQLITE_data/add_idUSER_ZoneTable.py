@@ -8,7 +8,8 @@ def update_utilisateur_id_in_zones(db_path):
     cursor.execute("SELECT id, zone_id FROM utilisateurs")
     utilisateurs = cursor.fetchall()
     
-    # Mettre à jour la colonne utilisateur_id dans la table zones
+    # Mettre à jour la colonne utilisateur_id dans la table zones 
+    # bug :si plusieurs users ont meme zone seul l'id du dernier est pris en compte
     for utilisateur in utilisateurs:
         utilisateur_id, zone_id = utilisateur
         cursor.execute("""

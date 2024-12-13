@@ -22,6 +22,7 @@ class _MapScreenState extends State<MapScreen> {
   bool _isLoading = true;
   bool _isError = false;
   List<Polygone> _polygones = [];
+  LatLng? _initialCenter;
 
   @override
   void initState() {
@@ -57,13 +58,9 @@ class _MapScreenState extends State<MapScreen> {
 
       setState(() {
         _polygones = polygones;
+        _initialCenter = _calculateInitialCenter();
         _isLoading = false;
       });
-
-      // Centrer la carte sur le premier polygone si disponible
-      if (_polygones.isNotEmpty) {
-        _centerMapOnPolygones();
-      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -74,37 +71,48 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  void _centerMapOnPolygones() {
-    if (_polygones.isEmpty) return;
-
-    // Calculer le centre des polygones
-    double sumLat = 0;
-    double sumLng = 0;
-    int pointCount = 0;
-
-    for (var polygone in _polygones) {
-      // Convertir la géométrie stockée en points
-      final List<dynamic> points = _parseGeometry(polygone.geom);
-      for (var point in points) {
-        sumLat += point.latitude;
-        sumLng += point.longitude;
-        pointCount++;
-      }
+  LatLng _calculateInitialCenter() {
+    if (_polygones.isEmpty) {
+      // Centrage par défaut sur Sangalkam si pas de polygones
+      // TODO: probleme pour centrer sur polygone
+      return LatLng(14.79778, -17.24925);
     }
 
-    if (pointCount > 0) {
-      final center = LatLng(sumLat / pointCount, sumLng / pointCount);
-      _mapController.move(center, 13.0);
+    // Prendre le premier point du premier polygone
+    final firstPolygone = _polygones.first;
+    final points = _parseGeometry(firstPolygone.geom);
+
+    if (points.isNotEmpty) {
+      return points.first;
     }
+
+    // Centrage par défaut sur Dakar si pas de points
+    return LatLng(14.6937, -17.4441);
   }
 
   List<LatLng> _parseGeometry(String geomString) {
-    // Convertir la chaîne de géométrie en liste de points
     try {
-      final List<dynamic> coordinates = jsonDecode(geomString);
-      return coordinates.map((coord) {
-        return LatLng(coord[1] as double, coord[0] as double);
-      }).toList();
+      // Vérifier différents formats de stockage
+      if (geomString.contains('POLYGON')) {
+        // Format WKT
+        final cleanGeom = geomString
+            .replaceAll('POLYGON((', '')
+            .replaceAll('))', '');
+
+        return cleanGeom.split(',').map((coord) {
+          final parts = coord.trim().split(' ');
+          return LatLng(
+              double.parse(parts[1]), // latitude
+              double.parse(parts[0])  // longitude
+          );
+        }).toList();
+      } else {
+        // Format JSON
+        final List<dynamic> coordinates = jsonDecode(geomString);
+        return coordinates.map((coord) {
+          return LatLng(coord[1] as double, coord[0] as double);
+        }).toList();
+      }
     } catch (e) {
       print('Erreur lors du parsing de la géométrie: $e');
       return [];
@@ -155,8 +163,9 @@ class _MapScreenState extends State<MapScreen> {
       body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(
-          initialCenter: LatLng(14.6937, -17.4441),
-          initialZoom: 13.0,
+          // Utiliser le centre calculé
+          initialCenter: _initialCenter ?? LatLng(14.6937, -17.4441),
+          initialZoom: 18.0,
         ),
         children: [
           TileLayer(

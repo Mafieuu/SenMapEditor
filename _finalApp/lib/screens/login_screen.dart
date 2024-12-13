@@ -115,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text('Mot de passe : dakar123'),
               const SizedBox(height: 15),
               const Text(
-                'Note : "L'utulisateur sarr_felwine est affecte au district de  sangalkam.",
+                "Note : L'utulisateur sarr_felwine est affecte au district de  sangalkam.",
                 style: TextStyle(
                   fontStyle: FontStyle.italic,
                   color: Colors.grey,

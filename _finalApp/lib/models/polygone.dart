@@ -1,5 +1,4 @@
 import 'package:latlong2/latlong.dart';
-import 'dart:convert';
 
 class Polygone {
   final int id;

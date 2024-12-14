@@ -14,4 +14,4 @@ def add_user(db_path, user_name, password, zone_id):
     conn.close()
 
 if __name__ == "__main__":
-    add_user("database.db", "diome_fatou", "passer123", 3)
+    add_user("database.db", "diouf_abdou", "senegal123", 2)

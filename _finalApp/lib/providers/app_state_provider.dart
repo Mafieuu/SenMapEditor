@@ -139,8 +139,8 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
-  Future<void> mergeSelectedPolygons() async {
-    if (_selectedPolygons.length < 2 || !_checkUserAndZone()) return;
+  Future<bool> mergeSelectedPolygons() async {
+    if (_selectedPolygons.length < 2 || !_checkUserAndZone()) return false;
 
     try {
       final polygonIds = _selectedPolygons.map((p) => p.id).toList();
@@ -152,12 +152,18 @@ class AppStateProvider with ChangeNotifier {
       );
 
       if (success) {
+        // Reload polygons to ensure the UI reflects the latest state
         await loadPolygons();
         _selectedPolygons.clear();
         notifyListeners();
+
+        // Optional: Return a boolean or the merged polygon for more control
+        return true;
       }
+      return false;
     } catch (e) {
       print('Erreur lors de la fusion des polygones: $e');
+      return false;
     }
   }
 

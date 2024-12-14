@@ -107,6 +107,7 @@ class DatabaseHelper {
     }
   }
 
+
   // Récupérer les polygones d'une zone
   Future<List<Polygone>> getPolygonsByZone(int zoneId) async {
     final db = await database;
@@ -185,6 +186,41 @@ class DatabaseHelper {
     int? userCount = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM utilisateurs'));
     print('Nombre total d\'utilisateurs : $userCount');
   }
+  // Ajout de la méthode savePolygons
+  Future<void> savePolygons(List<Polygone> polygones) async {
+    final db = await database;
+    Batch batch = db.batch();
+
+    for (Polygone polygone in polygones) {
+      batch.insert(
+        tablePolygons,
+        polygone.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+  Future<void> debugPolygonGeometry(int zoneId) async {
+    final db = await database;
+    try {
+      final result = await db.query(
+        tablePolygons,
+        columns: ['id', 'geom'],
+        where: 'zone_id = ?',
+        whereArgs: [zoneId],
+      );
+
+      print('Nombre de polygones : ${result.length}');
+      for (var polygon in result) {
+        print('Polygone ID: ${polygon['id']}');
+        print('Géométrie brute: ${polygon['geom']}');
+      }
+    } catch (e) {
+      print('Erreur lors du débogage des polygones: $e');
+    }
+  }
+
 
   // Méthode pour fermer la base de données
   Future close() async {

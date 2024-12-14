@@ -16,27 +16,46 @@ class Polygone {
   // Getter pour convertir la géométrie en List<LatLng>
   List<LatLng> get points {
     try {
-      // Gestion des différents formats possibles de WKT
-      final cleanGeom = geom
+      // Nettoyer et uniformiser la chaîne géométrique
+      String cleanGeom = geom
           .replaceAll('POLYGON((', '')
           .replaceAll('))', '')
           .replaceAll('POLYGON (', '')
-          .replaceAll(')', '');
-      
+          .replaceAll(')', '')
+          .trim();
+
+      // Séparer les coordonnées
       final coordinates = cleanGeom.split(',').map((coord) {
-        final parts = coord.trim().split(' ');
-        if (parts.length >= 2) {
-          return LatLng(
-            double.parse(parts[1].trim()), // latitude
-            double.parse(parts[0].trim())  // longitude
-          );
+        // Nettoyer et diviser la chaîne de coordonnées
+        final parts = coord.trim().split(RegExp(r'\s+'));
+
+        // Gérer les cas où les coordonnées peuvent être mal formatées
+        if (parts.length < 2) {
+          print('Coordonnées incomplètes: $coord');
+          return null;
         }
-        throw FormatException('Coordonnées invalides');
-      }).toList();
-      
+
+        try {
+          // Convertir en double en gérant différents formats
+          double longitude = double.parse(parts[0].trim());
+          double latitude = double.parse(parts[1].trim());
+
+          return LatLng(latitude, longitude);
+        } catch (e) {
+          print('Erreur de conversion pour les coordonnées: $coord');
+          print('Détails de l\'erreur: $e');
+          return null;
+        }
+      }).whereType<LatLng>().toList();
+
+      if (coordinates.isEmpty) {
+        throw FormatException('Aucune coordonnée valide trouvée');
+      }
+
       return coordinates;
     } catch (e) {
-      print('Erreur lors de la conversion de la géométrie: $e');
+      print('Erreur lors de la conversion de la géométrie : $e');
+      print('Géométrie originale : $geom');
       return [];
     }
   }
@@ -150,5 +169,18 @@ class Polygone {
       }
     }
     return intersectCount % 2 == 1;
+  }
+  Polygone copyWith({
+    int? id,
+    int? zoneId,
+    String? typePol,
+    String? geom,
+  }) {
+    return Polygone(
+      id: id ?? this.id,
+      zoneId: zoneId ?? this.zoneId,
+      typePol: typePol ?? this.typePol,
+      geom: geom ?? this.geom,
+    );
   }
 }

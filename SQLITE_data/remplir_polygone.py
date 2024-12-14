@@ -24,4 +24,4 @@ def remplir_polygone(db_path, zone_id, geojson_path):
     conn.close()
 
 if __name__ == "__main__":
-    remplir_polygone("database.db", 1, r"C:\Users\HP\Desktop\temp\HACKATON\Sen_Map_Editor\senmapeditor\assets\geojson\SANGALKAM.geojson")
+    remplir_polygone("database.db", 1, r"C:\Users\HP\Desktop\temp\HACKATON\Sen_Map_Editor\senmapeditor\assets\geojson\data.geojson")

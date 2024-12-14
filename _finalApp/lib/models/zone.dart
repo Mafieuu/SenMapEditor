@@ -13,7 +13,7 @@ class Zone {
     return Zone(
       id: map['id'],
       nom: map['nom'],
-      utilisateurId: map['utilisateur_id'],
+      utilisateurId: map['utilisateur_id'] as int?,
     );
   }
 

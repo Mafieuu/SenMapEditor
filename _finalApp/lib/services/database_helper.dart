@@ -15,11 +15,8 @@ class DatabaseHelper {
   static const String tableUsers = 'utilisateurs';
   static const String tableZones = 'zones';
   static const String tablePolygons = 'polygones';
-  static const String tableCreations = 'creations';
-  static const String tableDeletions = 'suppressions';
-  static const String tableModifications = 'modifications';
-  static const String tableFusions = 'fusions';
-  static const String tableDivisions = 'divisions';
+  static const String tableAction_log = 'action_log';
+
 
   DatabaseHelper._init();
 
@@ -141,7 +138,7 @@ class DatabaseHelper {
   Future<int> insertActionLog(ActionLog actionLog) async {
     final db = await database;
     try {
-      return await db.insert(tableCreations, actionLog.toMap());
+      return await db.insert(tableAction_log, actionLog.toMap());
     } catch (e) {
       print('Erreur lors de l\'insertion du log: $e');
       return -1;

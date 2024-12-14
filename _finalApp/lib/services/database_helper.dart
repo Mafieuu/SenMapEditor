@@ -137,7 +137,7 @@ class DatabaseHelper {
     }
   }
 
-  // Insertion d'un log d'action
+  // Insertion d'un log d'action dans la table creation
   Future<int> insertActionLog(ActionLog actionLog) async {
     final db = await database;
     try {
@@ -186,7 +186,7 @@ class DatabaseHelper {
     int? userCount = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM utilisateurs'));
     print('Nombre total d\'utilisateurs : $userCount');
   }
-  // Ajout de la méthode savePolygons
+  // méthode savePolygons pour sauvegarder un polygone dans la table polygone
   Future<void> savePolygons(List<Polygone> polygones) async {
     final db = await database;
     Batch batch = db.batch();

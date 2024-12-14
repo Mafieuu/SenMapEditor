@@ -1,3 +1,4 @@
+// journal d'action effectue sur un polygone
 class ActionLog {
   final int? id;
   final int polygoneId;

@@ -178,7 +178,7 @@ class _MapScreenState extends State<MapScreen> {
                       isDotted: isSelected,
                     );
                   }),
-                  // si mode dessin active et deux point dessinne
+                  // si mode dessin active et deux point deja dessinnee  dessinne
                   if (_isDrawingMode && _drawingPoints.length >= 2)
                     Polygon(
                       points: _drawingPoints,

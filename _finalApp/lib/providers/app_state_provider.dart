@@ -151,7 +151,7 @@ class AppStateProvider with ChangeNotifier {
         userId: _currentUser!.id!,
       );
 
-      if (success) {
+      if (success != null) {
         // Reload polygons to ensure the UI reflects the latest state
         await loadPolygons();
         _selectedPolygons.clear();
@@ -167,7 +167,7 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
-  // Nouvelle méthode pour ouvrir le dialogue d'édition
+  //  méthode pour ouvrir le dialogue d'édition
   Future<void> showPolygonEditor(BuildContext context, Polygone polygon) async {
     if (!_checkUserAndZone()) return;
 
@@ -201,7 +201,7 @@ class AppStateProvider with ChangeNotifier {
         userId: _currentUser!.id!,
       );
 
-      if (success) {
+      if (success != null) {
         await loadPolygons();
         notifyListeners();
       }

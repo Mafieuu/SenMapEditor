@@ -88,7 +88,7 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
     try {
       List<LatLng> newPoints = List.from(_editablePoints)..add(point);
       List<LatLng> convexHull = _enforceConvexPolygon(newPoints);
-      
+
       setState(() {
         _editablePoints = convexHull;
         _isModifying = false;
@@ -113,20 +113,24 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
     });
 
     try {
-      List<LatLng> newPoints = _editablePoints.where(
-        (p) => _calculateDistance(p, point) >= 0.0001
-      ).toList();
+      int? indexToRemove = _findClosestPointIndex(point);
+      if (indexToRemove != null) {
+        List<LatLng> newPoints = List.from(_editablePoints);
+        newPoints.removeAt(indexToRemove);
 
-      if (newPoints.length < 3) {
-        throw Exception('Le polygone doit avoir au moins 3 points');
+        if (newPoints.length < 3) {
+          throw Exception('Le polygone doit avoir au moins 3 points');
+        }
+
+        List<LatLng> convexHull = _enforceConvexPolygon(newPoints);
+
+        setState(() {
+          _editablePoints = convexHull;
+          _isModifying = false;
+        });
+      } else {
+        throw Exception('Point non trouvé');
       }
-
-      List<LatLng> convexHull = _enforceConvexPolygon(newPoints);
-      
-      setState(() {
-        _editablePoints = convexHull;
-        _isModifying = false;
-      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -163,7 +167,7 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
         List<LatLng> newPoints = List.from(_editablePoints);
         newPoints[_selectedPointIndex!] = point;
         List<LatLng> convexHull = _enforceConvexPolygon(newPoints);
-        
+
         setState(() {
           _editablePoints = convexHull;
           _selectedPointIndex = null;
@@ -182,21 +186,6 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
     }
   }
 
-  int? _findClosestPointIndex(LatLng point) {
-    double minDistance = double.infinity;
-    int? closestIndex;
-
-    for (int i = 0; i < _editablePoints.length; i++) {
-      double distance = _calculateDistance(_editablePoints[i], point);
-      if (distance < minDistance && distance < 0.0005) {
-        minDistance = distance;
-        closestIndex = i;
-      }
-    }
-
-    return closestIndex;
-  }
-
   List<LatLng> _enforceConvexPolygon(List<LatLng> points) {
     if (points.length < 3) {
       throw Exception('Un polygone doit avoir au moins 3 points');
@@ -211,7 +200,7 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
 
     // Calcul de l'enveloppe convexe
     List<LatLng> hull = [];
-    
+
     // Construction de la partie inférieure
     for (var point in workingPoints) {
       while (hull.length >= 2 && _crossProduct(hull[hull.length-2], hull.last, point) <= 0) {
@@ -240,18 +229,29 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
 
   double _crossProduct(LatLng o, LatLng a, LatLng b) {
     return (a.longitude - o.longitude) * (b.latitude - o.latitude) -
-           (a.latitude - o.latitude) * (b.longitude - o.longitude);
+        (a.latitude - o.latitude) * (b.longitude - o.longitude);
   }
 
-  double _calculateDistance(LatLng point1, LatLng point2) {
-    return const Distance().distance(point1, point2);
+  int? _findClosestPointIndex(LatLng point) {
+    double minDistance = double.infinity;
+    int? closestIndex;
+
+    for (int i = 0; i < _editablePoints.length; i++) {
+      double distance = const Distance().distance(point, _editablePoints[i]);
+      if (distance < minDistance && distance < 50) { // 50 mètres de tolérance
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+
+    return closestIndex;
   }
 
   LatLng _calculatePolygonCenter(List<LatLng> points) {
     if (points.isEmpty) {
       return const LatLng(14.80046963, -17.24228481); // Centre par défaut
     }
-    
+
     double lat = 0, lon = 0;
     for (var point in points) {
       lat += point.latitude;
@@ -269,14 +269,14 @@ class _PolygonEditorDialogState extends State<PolygonEditorDialog> {
     }
 
     try {
-      final success = await PolygonOperations.modifyPolygon(
+      final modifiedPolygon = await PolygonOperations.modifyPolygon(
         polygonId: widget.polygonId,
         newPoints: _editablePoints,
         zoneId: widget.zoneId,
         userId: widget.userId,
       );
 
-      if (success && mounted) {
+      if (modifiedPolygon != null && mounted) {
         widget.onPolygonModified?.call(_editablePoints);
         Navigator.of(context).pop(_editablePoints);
       } else if (mounted) {

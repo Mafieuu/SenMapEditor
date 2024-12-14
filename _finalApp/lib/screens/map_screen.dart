@@ -54,7 +54,7 @@ class _MapScreenState extends State<MapScreen> {
       final polygones = await DatabaseHelper.instance.getPolygonsByZone(currentZone.id);
       if (!mounted) return;
       setState(() {
-        _polygones = polygones;
+        _polygones = polygones; // _polygones est la liste des polygones visible tous le temps
         _initialCenter = _calculateInitialCenter();
         _isLoading = false;
       });
@@ -68,7 +68,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // Nouvelle méthode pour gérer la sélection des polygones
+  //  méthode pour gérer la sélection des polygones
   void _handlePolygonTap(Polygone polygon) {
     if (!_isDrawingMode && _isSelectionMode) {
       final appState = Provider.of<AppStateProvider>(context, listen: false);
@@ -80,7 +80,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // Méthode modifiée pour gérer les taps sur la carte
+  // Méthode  pour gérer les taps sur la carte
   void _handleMapTap(TapPosition tapPosition, LatLng point) {
     if (_isDrawingMode) {
       setState(() {
@@ -98,6 +98,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Méthode pour vérifier si un point est dans un polygone
+  // se base sur l'algorithme de ray-castimg
   bool _isPointInPolygon(LatLng point, List<LatLng> polygonPoints) {
     bool inside = false;
     int j = polygonPoints.length - 1;
@@ -130,13 +131,13 @@ class _MapScreenState extends State<MapScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadPolygonsFromDatabase,
+            onPressed: _loadPolygonsFromDatabase, // boutton de recharge du polygone depuis base de donnee
           ),
-          // Nouveau bouton pour le mode sélection
+          //  bouton pour le mode sélection
           IconButton(
             icon: Icon(
               Icons.select_all,
-              color: _isSelectionMode ? Colors.blue : null,
+              color: _isSelectionMode ? Colors.blue : Colors.red,
             ),
             onPressed: () {
               setState(() {
@@ -154,7 +155,7 @@ class _MapScreenState extends State<MapScreen> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: _initialCenter ?? const LatLng(14.6937, -17.4441),
+              initialCenter: _initialCenter ?? const LatLng(14.6937, -17.4441), // au cas ou
               initialZoom: 18.0,
               onTap: _handleMapTap,
             ),
@@ -170,13 +171,14 @@ class _MapScreenState extends State<MapScreen> {
                     return Polygon(
                       points: polygone.points,
                       color: isSelected
-                          ? Colors.red.withOpacity(0.3)
+                          ? Colors.red.withOpacity(0.8)
                           : Colors.blue.withOpacity(0.3),
                       borderColor: isSelected ? Colors.red : Colors.blue,
-                      borderStrokeWidth: isSelected ? 3 : 2,
+                      borderStrokeWidth: isSelected ? 4 : 2,
                       isDotted: isSelected,
                     );
                   }),
+                  // si mode dessin active et deux point dessinne
                   if (_isDrawingMode && _drawingPoints.length >= 2)
                     Polygon(
                       points: _drawingPoints,

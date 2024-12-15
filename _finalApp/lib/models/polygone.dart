@@ -12,33 +12,43 @@ class Polygone {
     this.typePol,
     required this.geom,
   });
-
   // Getter pour convertir la géométrie en List<LatLng>
   List<LatLng> get points {
     try {
-      // Nettoyer et uniformiser la chaîne géométrique
-      String cleanGeom = geom
-          .replaceAll('POLYGON((', '')
-          .replaceAll('))', '')
-          .replaceAll('POLYGON (', '')
-          .replaceAll(')', '')
-          .trim();
+      // Nettoyer la chaîne WKT
+      String cleanGeom = geom.trim();
 
-      // Séparer les coordonnées
-      final coordinates = cleanGeom.split(',').map((coord) {
-        // Nettoyer et diviser la chaîne de coordonnées
+      // Extraire les coordonnées entre les parenthèses les plus externes
+      final regex = RegExp(r'POLYGON\s*\(\((.*?)\)\)');
+      final match = regex.firstMatch(cleanGeom);
+
+      if (match == null || match.group(1) == null) {
+        throw FormatException('Format WKT invalide: $cleanGeom');
+      }
+
+      // Obtenir la chaîne de coordonnées
+      final coordsString = match.group(1)!;
+
+      // Séparer les paires de coordonnées
+      final coordinates = coordsString.split(',').map((coord) {
         final parts = coord.trim().split(RegExp(r'\s+'));
 
-        // Gérer les cas où les coordonnées peuvent être mal formatées
         if (parts.length < 2) {
           print('Coordonnées incomplètes: $coord');
           return null;
         }
 
         try {
-          // Convertir en double en gérant différents formats
+          // Dans le format WKT, la première coordonnée est la longitude (X)
+          // et la seconde est la latitude (Y)
           double longitude = double.parse(parts[0].trim());
           double latitude = double.parse(parts[1].trim());
+
+          // Vérifier si les coordonnées sont dans des plages valides
+          if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            print('Coordonnées hors limites: Lat=$latitude, Lon=$longitude');
+            return null;
+          }
 
           return LatLng(latitude, longitude);
         } catch (e) {
@@ -49,7 +59,7 @@ class Polygone {
       }).whereType<LatLng>().toList();
 
       if (coordinates.isEmpty) {
-        throw FormatException('Aucune coordonnée valide trouvée');
+        throw FormatException('Aucune coordonnée valide trouvée dans: $cleanGeom');
       }
 
       return coordinates;
@@ -59,15 +69,14 @@ class Polygone {
       return [];
     }
   }
-
   // Méthode pour créer une chaîne WKT à partir d'une liste de points
   static String pointsToWKT(List<LatLng> points) {
     if (points.isEmpty) return 'POLYGON EMPTY';
-    
+
     final coordinates = points.map((point) =>
-      '${point.longitude} ${point.latitude}'
+    '${point.longitude} ${point.latitude}'
     ).join(',');
-    
+
     return 'POLYGON(($coordinates))';
   }
 
@@ -122,8 +131,8 @@ class Polygone {
   // Méthode de fabrique pour créer un Polygone à partir de GeoJSON
   factory Polygone.fromGeoJSON(Map<String, dynamic> geoJson) {
     final coordinates = geoJson['geometry']['coordinates'][0];
-    final points = coordinates.map<LatLng>((coord) => 
-      LatLng(coord[1], coord[0])
+    final points = coordinates.map<LatLng>((coord) =>
+        LatLng(coord[1], coord[0])
     ).toList();
 
     return Polygone(
@@ -149,8 +158,8 @@ class Polygone {
     }
 
     return LatLng(
-      sumLat / points.length, 
-      sumLon / points.length
+        sumLat / points.length,
+        sumLon / points.length
     );
   }
 
@@ -159,12 +168,12 @@ class Polygone {
     int intersectCount = 0;
     for (int i = 0; i < points.length; i++) {
       final j = (i + 1) % points.length;
-      if (((points[i].latitude > point.latitude) != 
-           (points[j].latitude > point.latitude)) &&
-          (point.longitude < (points[j].longitude - points[i].longitude) * 
-           (point.latitude - points[i].latitude) / 
-           (points[j].latitude - points[i].latitude) + 
-           points[i].longitude)) {
+      if (((points[i].latitude > point.latitude) !=
+          (points[j].latitude > point.latitude)) &&
+          (point.longitude < (points[j].longitude - points[i].longitude) *
+              (point.latitude - points[i].latitude) /
+              (points[j].latitude - points[i].latitude) +
+              points[i].longitude)) {
         intersectCount++;
       }
     }

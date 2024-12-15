@@ -7,75 +7,103 @@ import '../services/database_helper.dart';
 
 class PolygonOperations {
   // Fusion de polygones
+  // -----------------------------------------------------------------------------
+
   static Future<Polygone?> mergePolygons({
     required List<int> polygonIds,
     required int zoneId,
     required int userId,
   }) async {
     try {
+      if (polygonIds.length < 2) {
+        throw Exception('Il faut au moins 2 polygones pour effectuer une fusion');
+      }
+
       final DatabaseHelper dbHelper = DatabaseHelper.instance;
       final db = await dbHelper.database;
 
       return await db.transaction((txn) async {
-        // 1. Récupérer tous les polygones à fusionner
+        // 1. Récupérer tous les polygones à fusionner avec validation
         final List<List<LatLng>> polygonsToMerge = [];
         final List<Map<String, dynamic>> polygonData = [];
 
         for (int id in polygonIds) {
           final result = await txn.query(
             DatabaseHelper.tablePolygons,
-            where: 'id = ?',
-            whereArgs: [id],
+            where: 'id = ? AND zone_id = ?',  // Vérifier aussi la zone_id
+            whereArgs: [id, zoneId],
           );
 
           if (result.isEmpty) {
-            throw Exception('Polygone $id non trouvé');
+            throw Exception('Polygone $id non trouvé dans la zone $zoneId');
+          }
+
+          final polygone = Polygone.fromMap(result.first);
+          final points = polygone.points;
+
+          if (points.isEmpty) {
+            throw Exception('Polygone $id invalide: pas de points');
           }
 
           polygonData.add(result.first);
-          final polygone = Polygone.fromMap(result.first);
-          polygonsToMerge.add(polygone.points);
+          polygonsToMerge.add(points);
         }
 
-        // 2. Effectuer la fusion
+        // 2. Effectuer la fusion avec validation
         final List<LatLng> mergedPoints = _mergePolygons(polygonsToMerge);
+        if (mergedPoints.length < 3) {
+          throw Exception('Le polygone fusionné doit avoir au moins 3 points');
+        }
 
-        // 3. Convertir le résultat en WKT
-        final String mergedGeom = Polygone.pointsToWKT(mergedPoints);
-
-        // 4. Créer le nouveau polygone fusionné
-        final Polygone newPolygone = Polygone(
-          id: DateTime.now().millisecondsSinceEpoch, // Temporaire
+        // 3. Créer le nouveau polygone avec les points fusionnés
+        final newGeom = Polygone.pointsToWKT(mergedPoints);
+        final newPolygone = Polygone(
+          id: 0,  // L'ID sera généré par SQLite
           zoneId: zoneId,
-          geom: mergedGeom,
+          geom: newGeom,
           typePol: 'merged',
         );
 
-        final int newPolygonId = await dbHelper.insertPolygone(newPolygone);
+        // 4. Insérer le nouveau polygone
+        final int newPolygonId = await txn.insert(
+          DatabaseHelper.tablePolygons,
+          newPolygone.toMap(),
+        );
+
+        if (newPolygonId <= 0) {
+          throw Exception('Échec de l\'insertion du nouveau polygone');
+        }
 
         // 5. Enregistrer l'action de fusion
-        await dbHelper.insertActionLog(
-          ActionLog(
-            polygoneId: newPolygonId,
-            zoneId: zoneId,
-            utilisateurId: userId,
-            action: 'fusion',
-            details: jsonEncode({
-              'polygones_sources': polygonIds,
-            }),
-            dateAction: DateTime.now(),
-          ),
+        final actionLog = ActionLog(
+          polygoneId: newPolygonId,
+          zoneId: zoneId,
+          utilisateurId: userId,
+          action: 'MERGE',
+          details: jsonEncode({
+            'source_polygons': polygonIds,
+            'points_count': mergedPoints.length,
+          }),
+          dateAction: DateTime.now(),
+        );
+
+        await txn.insert(
+          DatabaseHelper.tableAction_log,
+          actionLog.toMap(),
         );
 
         // 6. Supprimer les anciens polygones
-        for (int id in polygonIds) {
-          await txn.delete(
-            DatabaseHelper.tablePolygons,
-            where: 'id = ?',
-            whereArgs: [id],
-          );
+        final deletedCount = await txn.delete(
+          DatabaseHelper.tablePolygons,
+          where: 'id IN (${List.filled(polygonIds.length, '?').join(',')})',
+          whereArgs: polygonIds,
+        );
+
+        if (deletedCount != polygonIds.length) {
+          throw Exception('Tous les polygones n\'ont pas été supprimés');
         }
 
+        // 7. Retourner le nouveau polygone avec son ID
         return newPolygone.copyWith(id: newPolygonId);
       });
     } catch (e) {
@@ -85,47 +113,64 @@ class PolygonOperations {
   }
 
   // Création d'un nouveau polygone
+  // -----------------------------------------------------------------------------
+
   static Future<Polygone?> createPolygon({
     required List<LatLng> points,
     required int zoneId,
     required int userId,
     String? typePol,
   }) async {
-    if (points.length < 3) {
-      throw Exception('Un polygone doit avoir au moins 3 points');
-    }
-
     try {
-      // Convertir les points en WKT
-      final String geom = Polygone.pointsToWKT(points);
-
-      // Créer le polygone
-      final Polygone newPolygone = Polygone(
-        id: DateTime.now().millisecondsSinceEpoch, // Temporaire
-        zoneId: zoneId,
-        geom: geom,
-        typePol: typePol,
-      );
+      // Validation des points
+      if (points.length < 3) {
+        throw Exception('Un polygone doit avoir au moins 3 points');
+      }
 
       final DatabaseHelper dbHelper = DatabaseHelper.instance;
-      final int polygonId = await dbHelper.insertPolygone(newPolygone);
+      final db = await dbHelper.database;
 
-      // Enregistrer l'action de création
-      await dbHelper.insertActionLog(
-        ActionLog(
-          polygoneId: polygonId,
+      return await db.transaction((txn) async {
+        //  Créer le polygone avec les points
+        final newGeom = Polygone.pointsToWKT(points);
+        final newPolygone = Polygone(
+          id: 0,  // L'ID sera généré par SQLite
+          zoneId: zoneId,
+          geom: newGeom,
+          typePol: typePol ?? 'default',
+        );
+
+        //  Insérer le nouveau polygone
+        final int newPolygonId = await txn.insert(
+          DatabaseHelper.tablePolygons,
+          newPolygone.toMap(),
+        );
+
+        if (newPolygonId <= 0) {
+          throw Exception('Échec de l\'insertion du nouveau polygone');
+        }
+
+        //  Enregistrer l'action de création
+        final actionLog = ActionLog(
+          polygoneId: newPolygonId,
           zoneId: zoneId,
           utilisateurId: userId,
-          action: 'creation',
+          action: 'CREATE',
           details: jsonEncode({
             'type_pol': typePol,
-            'nombre_points': points.length,
+            'points_count': points.length,
           }),
           dateAction: DateTime.now(),
-        ),
-      );
+        );
 
-      return newPolygone.copyWith(id: polygonId);
+        await txn.insert(
+          DatabaseHelper.tableAction_log,
+          actionLog.toMap(),
+        );
+
+        //  Retourner le nouveau polygone avec son ID
+        return newPolygone.copyWith(id: newPolygonId);
+      });
     } catch (e) {
       print('Erreur lors de la création du polygone: $e');
       return null;
@@ -133,59 +178,68 @@ class PolygonOperations {
   }
 
   // Modification d'un polygone existant
+  // -----------------------------------------------------------------------------
+
   static Future<Polygone?> modifyPolygon({
     required int polygonId,
     required List<LatLng> newPoints,
     required int zoneId,
     required int userId,
   }) async {
-    if (newPoints.length < 3) {
-      throw Exception('Un polygone doit avoir au moins 3 points');
-    }
-
     try {
-      // Convertir les nouveaux points en WKT
-      final String newGeom = Polygone.pointsToWKT(newPoints);
+      // Validation des points
+      if (newPoints.length < 3) {
+        throw Exception('Un polygone doit avoir au moins 3 points');
+      }
 
       final DatabaseHelper dbHelper = DatabaseHelper.instance;
       final db = await dbHelper.database;
 
       return await db.transaction((txn) async {
-        // Récupérer le polygone original
-        final originalResult = await txn.query(
+        // 1. Vérifier l'existence du polygone et sa zone
+        final result = await txn.query(
           DatabaseHelper.tablePolygons,
-          where: 'id = ?',
-          whereArgs: [polygonId],
+          where: 'id = ? AND zone_id = ?',
+          whereArgs: [polygonId, zoneId],
         );
 
-        if (originalResult.isEmpty) {
-          throw Exception('Polygone non trouvé');
+        if (result.isEmpty) {
+          throw Exception('Polygone $polygonId non trouvé dans la zone $zoneId');
         }
 
-        final originalPolygone = Polygone.fromMap(originalResult.first);
+        final originalPolygone = Polygone.fromMap(result.first);
 
-        // Mettre à jour le polygone
-        final updatedPolygone = originalPolygone.copyWithNewPoints(newPoints);
-        await txn.update(
+        // 2. Mettre à jour le polygone avec les nouveaux points
+        final newGeom = Polygone.pointsToWKT(newPoints);
+        final updatedPolygone = originalPolygone.copyWith(geom: newGeom);
+
+        final updateCount = await txn.update(
           DatabaseHelper.tablePolygons,
           updatedPolygone.toMap(),
-          where: 'id = ?',
-          whereArgs: [polygonId],
+          where: 'id = ? AND zone_id = ?',
+          whereArgs: [polygonId, zoneId],
         );
 
-        // Enregistrer l'action de modification
-        await dbHelper.insertActionLog(
-          ActionLog(
-            polygoneId: polygonId,
-            zoneId: zoneId,
-            utilisateurId: userId,
-            action: 'modification',
-            details: jsonEncode({
-              'ancien_nombre_points': originalPolygone.points.length,
-              'nouveau_nombre_points': newPoints.length,
-            }),
-            dateAction: DateTime.now(),
-          ),
+        if (updateCount != 1) {
+          throw Exception('Échec de la mise à jour du polygone');
+        }
+
+        // 3. Enregistrer l'action de modification
+        final actionLog = ActionLog(
+          polygoneId: polygonId,
+          zoneId: zoneId,
+          utilisateurId: userId,
+          action: 'UPDATE',
+          details: jsonEncode({
+            'original_points_count': originalPolygone.points.length,
+            'new_points_count': newPoints.length,
+          }),
+          dateAction: DateTime.now(),
+        );
+
+        await txn.insert(
+          DatabaseHelper.tableAction_log,
+          actionLog.toMap(),
         );
 
         return updatedPolygone;
@@ -197,6 +251,8 @@ class PolygonOperations {
   }
 
   // Suppression d'un polygone
+  // -----------------------------------------------------------------------------
+
   static Future<bool> deletePolygon({
     required int polygonId,
     required int zoneId,
@@ -207,40 +263,47 @@ class PolygonOperations {
       final db = await dbHelper.database;
 
       return await db.transaction((txn) async {
-        // Récupérer les informations du polygone avant suppression
-        final polygonData = await txn.query(
+        //  Vérifier l'existence du polygone et sa zone
+        final result = await txn.query(
           DatabaseHelper.tablePolygons,
-          where: 'id = ?',
-          whereArgs: [polygonId],
+          where: 'id = ? AND zone_id = ?',
+          whereArgs: [polygonId, zoneId],
         );
 
-        if (polygonData.isEmpty) {
-          throw Exception('Polygone non trouvé');
+        if (result.isEmpty) {
+          throw Exception('Polygone $polygonId non trouvé dans la zone $zoneId');
         }
 
-        final polygone = Polygone.fromMap(polygonData.first);
+        final polygone = Polygone.fromMap(result.first);
 
-        // Enregistrer l'action de suppression
-        await dbHelper.insertActionLog(
-          ActionLog(
-            polygoneId: polygonId,
-            zoneId: zoneId,
-            utilisateurId: userId,
-            action: 'suppression',
-            details: jsonEncode({
-              'type_pol': polygone.typePol,
-              'nombre_points': polygone.points.length,
-            }),
-            dateAction: DateTime.now(),
-          ),
+        //  Enregistrer l'action de suppression
+        final actionLog = ActionLog(
+          polygoneId: polygonId,
+          zoneId: zoneId,
+          utilisateurId: userId,
+          action: 'DELETE',
+          details: jsonEncode({
+            'type_pol': polygone.typePol,
+            'points_count': polygone.points.length,
+          }),
+          dateAction: DateTime.now(),
         );
 
-        // Supprimer le polygone
-        await txn.delete(
+        await txn.insert(
+          DatabaseHelper.tableAction_log,
+          actionLog.toMap(),
+        );
+
+        //  Supprimer le polygone
+        final deleteCount = await txn.delete(
           DatabaseHelper.tablePolygons,
-          where: 'id = ?',
-          whereArgs: [polygonId],
+          where: 'id = ? AND zone_id = ?',
+          whereArgs: [polygonId, zoneId],
         );
+
+        if (deleteCount != 1) {
+          throw Exception('Échec de la suppression du polygone');
+        }
 
         return true;
       });
@@ -249,101 +312,90 @@ class PolygonOperations {
       return false;
     }
   }
+  // -----------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------
 
-  // Méthodes privées pour la fusion de polygones
-  static double _calculateDistance(LatLng point1, LatLng point2) {
-    return sqrt(
-        pow(point1.latitude - point2.latitude, 2) +
-            pow(point1.longitude - point2.longitude, 2)
-    );
-  }
-
-  static bool _arePointsClose(LatLng point1, LatLng point2, {double threshold = 1e-6}) {
-    return _calculateDistance(point1, point2) < threshold;
-  }
-
+  // definiton des methodes utulise
   static List<LatLng> _mergePolygons(List<List<LatLng>> polygons) {
     if (polygons.isEmpty) return [];
     if (polygons.length == 1) return polygons.first;
 
-    Set<LatLng> uniquePoints = {};
+    // Combiner tous les points des polygones
+    List<LatLng> allPoints = [];
     for (var polygon in polygons) {
-      uniquePoints.addAll(polygon);
+      allPoints.addAll(polygon);
     }
 
-    Map<LatLng, List<LatLng>> pointClusters = {};
-    for (var point in uniquePoints) {
-      bool merged = false;
-      for (var cluster in pointClusters.keys) {
-        if (_arePointsClose(point, cluster)) {
-          pointClusters[cluster]!.add(point);
-          merged = true;
+    // Éliminer les points trop proches
+    List<LatLng> uniquePoints = [];
+    for (var point in allPoints) {
+      bool shouldAdd = true;
+      for (var existing in uniquePoints) {
+        if (_arePointsClose(point, existing)) {
+          shouldAdd = false;
           break;
         }
       }
-      if (!merged) {
-        pointClusters[point] = [point];
+      if (shouldAdd) {
+        uniquePoints.add(point);
       }
     }
 
-    List<LatLng> mergedPoints = [];
-    for (var point in uniquePoints) {
-      var representative = pointClusters.keys.firstWhere(
-              (k) => pointClusters[k]!.contains(point)
-      );
-      if (!mergedPoints.contains(representative)) {
-        mergedPoints.add(representative);
-      }
-    }
-
-    return _convexAlgo(mergedPoints);
+    // Calculer l'enveloppe convexe
+    return _convexHull(uniquePoints);
   }
 
-  static List<LatLng> _convexAlgo(List<LatLng> points) {
-    if (points.length <= 3) return points;
+  static List<LatLng> _convexHull(List<LatLng> points) {
+    if (points.length < 3) return points;
 
-    LatLng bottomPoint = points.reduce((a, b) {
-      if (a.latitude < b.latitude) return a;
-      if (a.latitude > b.latitude) return b;
-      return a.longitude < b.longitude ? a : b;
-    });
+    // Trouver le point le plus bas
+    LatLng start = points.reduce((curr, next) =>
+    curr.latitude < next.latitude ? curr : next);
 
-    points.sort((a, b) {
-      double angleA = atan2(
-          a.latitude - bottomPoint.latitude,
-          a.longitude - bottomPoint.longitude
-      );
-      double angleB = atan2(
-          b.latitude - bottomPoint.latitude,
-          b.longitude - bottomPoint.longitude
-      );
-      return angleA.compareTo(angleB);
-    });
+    List<LatLng> hull = [];
+    LatLng endpoint;
+    LatLng currentPoint = start;
 
-    List<LatLng> hull = [bottomPoint];
-    for (var point in points) {
-      while (hull.length > 1 &&
-          _crossProduct(hull[hull.length - 2], hull.last, point) <= 0) {
-        hull.removeLast();
+    do {
+      hull.add(currentPoint);
+      endpoint = points[0];
+
+      for (int i = 1; i < points.length; i++) {
+        if ((endpoint == currentPoint) ||
+            _crossProduct(currentPoint, endpoint, points[i]) < 0) {
+          endpoint = points[i];
+        }
       }
-      hull.add(point);
-    }
+
+      currentPoint = endpoint;
+    } while (endpoint != start);
 
     return hull;
+  }
+
+  static bool _arePointsClose(LatLng p1, LatLng p2, {double threshold = 1e-6}) {
+    return _calculateDistance(p1, p2) < threshold;
+  }
+
+  static double _calculateDistance(LatLng p1, LatLng p2) {
+    const double earthRadius = 6371000; // Rayon moyen de la Terre en mètres
+
+    double lat1 = p1.latitude * pi / 180;
+    double lat2 = p2.latitude * pi / 180;
+    double dLat = (p2.latitude - p1.latitude) * pi / 180;
+    double dLon = (p2.longitude - p1.longitude) * pi / 180;
+
+    double a = sin(dLat/2) * sin(dLat/2) +
+        cos(lat1) * cos(lat2) *
+            sin(dLon/2) * sin(dLon/2);
+
+    double c = 2 * atan2(sqrt(a), sqrt(1-a));
+    return earthRadius * c;
   }
 
   static double _crossProduct(LatLng o, LatLng a, LatLng b) {
     return (a.longitude - o.longitude) * (b.latitude - o.latitude) -
         (a.latitude - o.latitude) * (b.longitude - o.longitude);
-  }
-
-  // Méthode utilitaire pour convertir une chaîne géométrique en points
-  static List<LatLng> geometryFromString(String geom) {
-    try {
-      return Polygone.fromMap({'geom': geom}).points;
-    } catch (e) {
-      print('Erreur lors de la conversion de la géométrie: $e');
-      return [];
-    }
   }
 }

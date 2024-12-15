@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/polygone.dart';
 import '../providers/app_state_provider.dart';
 import '../services/database_helper.dart';
+import '../widgets/custom_app_bar.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -17,7 +18,6 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
   bool _isLoading = true;
-  bool _isError = false;
   List<Polygone> _polygones = [];
   LatLng? _initialCenter;
   bool _isDrawingMode = false;
@@ -44,7 +44,6 @@ class _MapScreenState extends State<MapScreen> {
 
     if (currentZone == null) {
       setState(() {
-        _isError = true;
         _isLoading = false;
       });
       return;
@@ -61,7 +60,6 @@ class _MapScreenState extends State<MapScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _isError = true;
         _isLoading = false;
       });
       _showErrorDialog('Erreur lors du chargement des données: $e');
@@ -119,25 +117,34 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     final appState = Provider.of<AppStateProvider>(context);
+    if (_isLoading) {
+      return Scaffold(
+          appBar: CustomAppBar(
+            title: 'Chargement en cour ...',
+            onLogout: () {
+              appState.logout();
+
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+              ),
+          body: const Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: Text(appState.currentZone?.nom ?? 'Carte'),
         actions: [
+          //-------------------------- boutton de recharge du polygone depuis base de donnee
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadPolygonsFromDatabase, // boutton de recharge du polygone depuis base de donnee
+            onPressed: _loadPolygonsFromDatabase,
           ),
           //  bouton pour le mode sélection
           IconButton(
             icon: Icon(
               Icons.select_all,
-              color: _isSelectionMode ? Colors.blue : Colors.red,
+              color: _isSelectionMode ? Colors.deepOrange : Colors.teal,
             ),
             onPressed: () {
               setState(() {

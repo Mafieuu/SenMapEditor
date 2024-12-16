@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 40),
                       // Titre de l'application
                       const Text(
-                        'SenMapEditor',
+                        'GeoIaVision',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 24,

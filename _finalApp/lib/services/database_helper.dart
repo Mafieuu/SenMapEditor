@@ -166,6 +166,27 @@ class DatabaseHelper {
       return -1;
     }
   }
+  // ------------------------------------------
+  // Méthode pour obtenir le prochain ID de polygone disponible pour l'utilisateur
+  Future<int> getNextPolygonId(int userId) async {
+    final db = await database;
+    try {
+      // Rechercher le polygone avec l'ID le plus élevé pour l'utilisateur
+      final result = await db.query(
+        tablePolygons,
+        columns: ['MAX(id) as max_id'],
+      );
+
+      // Récupérer l'ID maximum actuel
+      int currentMaxId = Sqflite.firstIntValue(await db.rawQuery('SELECT MAX(id) FROM $tablePolygons')) ?? 0;
+
+      // Retourner l'ID suivant
+      return currentMaxId + 1;
+    } catch (e) {
+      print('Erreur lors de la récupération du prochain ID de polygone: $e');
+      return 10000; // ID par défaut si une erreur survient
+    }
+  }
 
   // Méthode de débogage
   Future<void> debugDatabase() async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:kenpachi/screens/questionnaire_screen.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
@@ -133,6 +134,7 @@ class _MapScreenState extends State<MapScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.teal,
         title: Text(appState.currentZone?.nom ?? 'Carte'),
         actions: [
           //-------------------------- boutton de recharge du polygone depuis base de donnee
@@ -144,7 +146,7 @@ class _MapScreenState extends State<MapScreen> {
           IconButton(
             icon: Icon(
               Icons.select_all,
-              color: _isSelectionMode ? Colors.deepOrange : Colors.teal,
+              color: _isSelectionMode ? Colors.deepOrange : Colors.black,
             ),
             onPressed: () {
               setState(() {
@@ -239,12 +241,16 @@ class _MapScreenState extends State<MapScreen> {
         ],
       ),
       bottomNavigationBar: BottomAppBar(
+        color: Colors.white12,
+
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           height: 60,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
+
             children: [
+
               if (!_isDrawingMode) ...[
                 IconButton(
                   icon: const Icon(Icons.add),
@@ -266,6 +272,23 @@ class _MapScreenState extends State<MapScreen> {
                       context,
                       appState.selectedPolygons.first,
                     )
+                        : null,
+                  ),
+                  //  bouton pour le questionnaire
+                  IconButton(
+                    icon: const Icon(Icons.assignment),
+                    tooltip: 'Questionnaire',
+                    onPressed: appState.selectedPolygons.length == 1
+                        ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuestionnaireScreen(
+                            polygonId: appState.selectedPolygons.first.id,
+                          ),
+                        ),
+                      );
+                    }
                         : null,
                   ),
                   IconButton(

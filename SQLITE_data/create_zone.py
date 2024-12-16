@@ -13,4 +13,4 @@ def add_zone(db_path, zone_name, utilisateur_id=None):
     conn.close()
 
 if __name__ == "__main__":
-    add_zone("database.db", "Kafountine district 1",2)  
+    add_zone("database.db", "kafountine district 2",3)  

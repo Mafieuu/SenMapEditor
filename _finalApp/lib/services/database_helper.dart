@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import '../models/questionnaire.dart';
 import '../models/user.dart';
 import '../models/zone.dart';
 import '../models/polygone.dart';
@@ -238,7 +239,68 @@ class DatabaseHelper {
       print('Erreur lors du débogage des polygones: $e');
     }
   }
+// --------------------------------------------------------------------------
+  // Methode du questionnaire
 
+// Check if a questionnaire exists for a specific polygon
+  Future<bool> hasQuestionnaireForPolygon(int polygonId) async {
+    final db = await database;
+    try {
+      final result = await db.query(
+        'questionnaire',
+        where: 'polygone_id = ?',
+        whereArgs: [polygonId],
+      );
+      return result.isNotEmpty;
+    } catch (e) {
+      print('Erreur lors de la vérification du questionnaire: $e');
+      return false;
+    }
+  }
+
+// Insert a new questionnaire
+  Future<int> insertQuestionnaire(Questionnaire questionnaire) async {
+    final db = await database;
+    try {
+      print('insertion de  questionnaire: ${questionnaire.toMap()}'); //ajout d'un log
+      return await db.insert('questionnaire', questionnaire.toMap());
+    } catch (e) {
+      print('Erreur lors de l\'insertion du questionnaire: $e');
+      return -1;
+    }
+  }
+
+// Retrieve questionnaire for a specific polygon
+  Future<Questionnaire?> getQuestionnaireByPolygonId(int polygonId) async {
+    final db = await database;
+    try {
+      final result = await db.query(
+        'questionnaire',
+        where: 'polygone_id = ?',
+        whereArgs: [polygonId],
+      );
+
+      return result.isNotEmpty ? Questionnaire.fromMap(result.first) : null;
+    } catch (e) {
+      print('Erreur lors de la récupération du questionnaire: $e');
+      return null;
+    }
+  }
+
+// Delete existing questionnaire for a polygon
+  Future<int> deleteQuestionnaireForPolygon(int polygonId) async {
+    final db = await database;
+    try {
+      return await db.delete(
+        'questionnaire',
+        where: 'polygone_id = ?',
+        whereArgs: [polygonId],
+      );
+    } catch (e) {
+      print('Erreur lors de la suppression du questionnaire: $e');
+      return 0;
+    }
+  }
 
   // Méthode pour fermer la base de données
   Future close() async {

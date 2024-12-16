@@ -58,22 +58,21 @@ def create_database(db_path):
 
     # Création de la table questionnaire
     cursor.execute('''
-    CREATE TABLE questionnaire (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        polygone_id INTEGER NOT NULL,
-        question1 TEXT NOT NULL,
-        question2 TEXT NOT NULL,
-        question3 TEXT NOT NULL,
-        question4 TEXT NOT NULL,
-        question5 TEXT NOT NULL,
-        question6 TEXT NOT NULL,
-        question7 TEXT NOT NULL,
-        question8 TEXT NOT NULL,
-        question9 TEXT NOT NULL,
-        question10 TEXT NOT NULL,
-        FOREIGN KEY (polygone_id) REFERENCES polygones (id) ON DELETE CASCADE
-    )
-    ''')
+        CREATE TABLE questionnaire (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            polygone_id INTEGER NOT NULL,
+            land_use_type TEXT,
+            is_occupied INTEGER,
+            household_count INTEGER,
+            building_type TEXT,
+            roof_material TEXT,
+            has_electricity INTEGER,
+            has_water_access INTEGER,
+            ownership_status TEXT,
+            additional_comments TEXT,
+            FOREIGN KEY (polygone_id) REFERENCES polygones (id) ON DELETE CASCADE
+        )
+        ''')
 
     # Sauvegarde des modifications et fermeture de la connexion
     conn.commit()

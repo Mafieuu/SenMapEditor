@@ -44,9 +44,9 @@ if __name__ == "__main__":
     DB_PATH = "database.db"
     
     # Remplir avec les données GeoJSON
-    ZONE_ID = 3
-    UTILISATEUR_ID = 3
-    GEOJSON_PATH = r"C:\Users\HP\Desktop\temp\HACKATON\Sen_Map_Editor\senmapeditor\assets\geojson\data.geojson"
+    ZONE_ID = 2
+    UTILISATEUR_ID = 2
+    GEOJSON_PATH = r"data.geojson"
     
     remplir_polygone(DB_PATH, ZONE_ID, GEOJSON_PATH, UTILISATEUR_ID)
 

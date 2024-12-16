@@ -58,7 +58,7 @@ class PolygonOperations {
         // 3. Créer le nouveau polygone avec les points fusionnés
         final newGeom = Polygone.pointsToWKT(mergedPoints);
         final newPolygone = Polygone(
-          id: 0,  // L'ID sera généré par SQLite
+          id: 20000, //Une solution temporaire
           zoneId: zoneId,
           geom: newGeom,
           typePol: 'merged',
@@ -134,7 +134,7 @@ class PolygonOperations {
         //  Créer le polygone avec les points
         final newGeom = Polygone.pointsToWKT(points);
         final newPolygone = Polygone(
-          id: 0,  // L'ID sera généré par SQLite
+          id: 10000,  // --------------------une solution temporaire
           zoneId: zoneId,
           geom: newGeom,
           typePol: typePol ?? 'default',

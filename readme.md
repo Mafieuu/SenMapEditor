@@ -90,11 +90,12 @@ La base de données SQLite contient plusieurs tables clés :
 
 #### Sélection de Zone
 ![home](screenshot/3.png)
+![selection](screenshot/4.png)
 
 - Liste des zones accessibles à l’utilisateur .
 - Sélection d'une zone pour afficher les polygones associés.
 - bouton se deconecter place au niveau de  l'appBar
-![selection](screenshot/4.png)
+
 
 #### Écran Map
 ![map](screenshot/5.png)
@@ -110,10 +111,11 @@ La base de données SQLite contient plusieurs tables clés :
   - supprimer un polygone
 
  Création de Polygones:
- ![dessin](screenshot/6.png)
- ![Resultat du dessin ](screenshot/7.png)
- ![selection polygone](screenshot/8.png)
-  ![ polygone selectionne](screenshot/9.png)
+
+![dessin](screenshot/6.png)
+![Resultat du dessin ](screenshot/7.png)
+![selection polygone](screenshot/8.png)
+![ polygone selectionne](screenshot/9.png)
 
 - Ajout de points par simple clic sur la carte.
 - annuler
@@ -123,24 +125,24 @@ La base de données SQLite contient plusieurs tables clés :
  Modification de Polygones:
 
 - **Écran interactif dédié** :
- ![editeur de polygone](screenshot/10.png)
-  ![Ajout de points](screenshot/11.png)
-  ![suppression de points](screenshot/12.png)
-   ![deplacement de points](screenshot/13.png)
-  ![Resultat de la modification](screenshot/14.png)
+![editeur de polygone](screenshot/10.png)
+![Ajout de points](screenshot/11.png)
+![suppression de points](screenshot/12.png)
+![deplacement de points](screenshot/13.png)
+![Resultat de la modification](screenshot/14.png)
 
   - Ajouter des points.
   - Supprimer des points.
   - Déplacer des points.
   - Boutons "Annuler" et "Valider" pour confirmer ou rejeter les modifications.
-   ![selection de polygone a suprimmer](screenshot/14.png)
-    ![Supression du polygone](screenshot/15.png)
-      ![Fusion du polygone](screenshot/17.png)
+![selection de polygone a suprimmer](screenshot/14.png)
+![Supression du polygone](screenshot/15.png)
+![Fusion du polygone](screenshot/17.png)
 
 
 #### Questionnaire
-  ![Questionnaire  d'un polygone](screenshot/19.png)
-    ![fin Questionnaire  d'un polygone](screenshot/20.png)
+![Questionnaire  d'un polygone](screenshot/19.png)
+![fin Questionnaire  d'un polygone](screenshot/20.png)
 
 - Formulaire interactif pour chaque polygone sélectionné :
   - Type d’occupation du terrain.
@@ -171,6 +173,6 @@ Flutter Map, utilisé comme base, ne fournit pas ces outils . Nous avons donc cr
 
 ## Les membres de l'equipe
 
-1.Amavi Joyce Atchou
-2. Yondan Yamin Konlambigue
-3. Moussa Dieme
+- Amavi Joyce Atchou
+- Yondan Yamin Konlambigue
+- Moussa Dieme

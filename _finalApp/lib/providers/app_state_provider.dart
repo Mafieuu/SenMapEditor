@@ -211,6 +211,7 @@ class AppStateProvider with ChangeNotifier {
   }
 
   void transferBackupToAWS() {
+    // Actuellement pas de package permetant la sauvegarde de bocket vers S3 compatible avec la version http: ^1.2.2 (necessaire a flutter map)
     print("Transfert de la sauvegarde vers AWS...");
   }
 }
